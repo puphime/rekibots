@@ -1,0 +1,11 @@
+[Unit]
+Description=Bots for Mastodon
+After=multi-user.target
+
+[Service]
+Type=idle
+User=pi
+ExecStart=/home/pi/rekibot/startbots.sh
+
+[Install]
+WantedBy=multi-user.target
