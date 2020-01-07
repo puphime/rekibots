@@ -173,7 +173,7 @@ class danboorubot(ananas.PineappleBot):
         print("[{0:%Y-%m-%d %H:%M:%S}] Queue now has {1} entries.".format(datetime.now(),len(self.queue)), file=self.log_file, flush=True)
         self.check_booru()
 
-    @ananas.schedule(minute="*/5")
+    @ananas.schedule(minute="*")
     def post(self):
         if datetime.now().minute != int(self.config.offset) and datetime.now().minute != int(self.config.offset)+30: 
             return
