@@ -17,7 +17,7 @@ class reminder(ananas.PineappleBot):
         self.h = HTMLParser()
         print("[{0:%Y-%m-%d %H:%M:%S}] Startup OK.".format(datetime.now()), file=self.log_file, flush=True)
     
-    @ananas.schedule(second=30)
+    @ananas.schedule(minute="*", second=30)
     def check_follows(self):
         self.me = self.mastodon.account_verify_credentials()
         my_id = self.me['id']
@@ -53,7 +53,7 @@ class reminder(ananas.PineappleBot):
                     self.mastodon.account_unfollow(followed) 
                     print("[{0:%Y-%m-%d %H:%M:%S}] Unfollowed user {1}.".format(datetime.now(),str(followed)), file=self.log_file, flush=True)
    
-    @ananas.schedule(second=0)
+    @ananas.schedule(minute="*", second=0)
     def check_posts(self):
         posts = self.mastodon.timeline_home(since_id=self.last_checked_post['id'])
         if len(posts)>0:
@@ -95,7 +95,7 @@ class danboorubot(ananas.PineappleBot):
                 else:
                     break
             if len(posts) == 0:
-                print("[{0:%Y-%m-%d %H:%M:%S}] No posts on page. Finished building database".format(datetime.now()), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] No posts found. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
                 conn.close()
                 break
             counter=0
