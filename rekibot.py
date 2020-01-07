@@ -107,7 +107,7 @@ class danboorubot(ananas.PineappleBot):
                         source_url = post['source']
                     if 'file_url' in post:
                         danbooru_url = post['file_url']
-                    elif 'file_url' in post:
+                    elif 'large_file_url' in post:
                         danbooru_url = post['large_file_url']
                     else:
                         continue
