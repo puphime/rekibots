@@ -15,7 +15,7 @@ class reminder(ananas.PineappleBot):
         self.me = self.mastodon.account_verify_credentials()
         self.last_checked_post = self.mastodon.timeline_home()[0]
         self.h = HTMLParser()
-        print("[{0:%Y-%m-%d %H:%M:%S}] Startup OK.".format(datetime.now()), file=self.log_file, flush=True)
+       # print("[{0:%Y-%m-%d %H:%M:%S}] Startup OK.".format(datetime.now()), file=self.log_file, flush=True)
     
     @ananas.schedule(minute="*", second=30)
     def check_follows(self):
@@ -58,7 +58,7 @@ class reminder(ananas.PineappleBot):
         posts = self.mastodon.timeline_home(since_id=self.last_checked_post['id'])
         if len(posts)>0:
             for post in posts:
-                print("[{0:%Y-%m-%d %H:%M:%S}] Checking post ID {1}.".format(datetime.now(),post['id']), file=self.log_file, flush=True)
+               # print("[{0:%Y-%m-%d %H:%M:%S}] Checking post ID {1}.".format(datetime.now(),post['id']), file=self.log_file, flush=True)
                 if len(post['media_attachments'])>0 and post['reblog'] is None and post['in_reply_to_id'] is None and not "RT @" in post['content']:
                     marked = False
                     for attachment in post['media_attachments']:
@@ -68,7 +68,7 @@ class reminder(ananas.PineappleBot):
                         print("[{0:%Y-%m-%d %H:%M:%S}] -> Posting reply.".format(datetime.now()), file=self.log_file, flush=True)
                         self.mastodon.status_post('@'+post['account']['acct']+' hey, just so you know, this status includes an attachment with missing accessibility (alt) text.', in_reply_to_id=(post['id']),visibility='direct')
             self.last_checked_post = posts[0]
-        print("[{0:%Y-%m-%d %H:%M:%S}] Done checking {1} posts.".format(datetime.now(),len(posts)), file=self.log_file, flush=True)
+       # print("[{0:%Y-%m-%d %H:%M:%S}] Done checking {1} posts.".format(datetime.now(),len(posts)), file=self.log_file, flush=True)
             
     @ananas.reply
     def delete_post(self, status, user):
@@ -95,7 +95,7 @@ class danboorubot(ananas.PineappleBot):
                 else:
                     break
             if len(posts) == 0:
-                print("[{0:%Y-%m-%d %H:%M:%S}] No posts found. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] Reached last page. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
                 conn.close()
                 break
             counter=0
@@ -147,7 +147,7 @@ class danboorubot(ananas.PineappleBot):
         self.h = HTMLParser()
         self.queue=[]
         self.playlist=[]
-        self.excluded_tags = ['female_pervert','groping','breast_grab','pervert','sexual_harassment','sexually_suggestive','underwear_only','breast_press','underwear','topless','dangerous_beast','bottomless','no_panties','spoilers','revealing_clothes','pet_play','eargasm','daijoubu?_oppai_momu?','guro','bdsm','bondage','foot_worship','comic','cameltoe','bikini_top','osomatsu-san','osomatsu-kun','naked_sheet','foot_licking','sweat','nude','nude_cover','bunnysuit','loli','randoseru','age_difference','younger','child','height_difference','incest','you_gonna_get_raped','sisters','kindergarten_uniform','male_focus','1boy','multiple_boys','violence','horror','parody','no_humans','calne_ca','predator','goron','ichigo_mashimaro','manly','upskirt','banned_artist']
+        self.excluded_tags = ['female_pervert','groping','breast_grab','pervert','sexual_harassment','sexually_suggestive','underwear_only','breast_press','topless','dangerous_beast','bottomless','no_panties','spoilers','revealing_clothes','pet_play','eargasm','daijoubu?_oppai_momu?','guro','bdsm','bondage','foot_worship','comic','cameltoe','osomatsu-san','osomatsu-kun','naked_sheet','foot_licking','nude','nude_cover','bunnysuit','randoseru','age_difference','younger','child','incest','you_gonna_get_raped','sisters','kindergarten_uniform','male_focus','1boy','multiple_boys','violence','horror','parody','no_humans','calne_ca','predator','goron','ichigo_mashimaro','manly','upskirt','banned_artist']
         self.mandatory_tags = ['girl',]
 
         conn = sqlite3.connect("%s.db" % self.config._name)
