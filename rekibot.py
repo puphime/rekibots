@@ -15,7 +15,6 @@ class reminder(ananas.PineappleBot):
         self.me = self.mastodon.account_verify_credentials()
         self.last_checked_post = self.mastodon.timeline_home()[0]
         self.h = HTMLParser()
-       # print("[{0:%Y-%m-%d %H:%M:%S}] Startup OK.".format(datetime.now()), file=self.log_file, flush=True)
     
     @ananas.schedule(minute="*", second=30)
     def check_follows(self):
@@ -58,7 +57,6 @@ class reminder(ananas.PineappleBot):
         posts = self.mastodon.timeline_home(since_id=self.last_checked_post['id'])
         if len(posts)>0:
             for post in posts:
-               # print("[{0:%Y-%m-%d %H:%M:%S}] Checking post ID {1}.".format(datetime.now(),post['id']), file=self.log_file, flush=True)
                 if len(post['media_attachments'])>0 and post['reblog'] is None and post['in_reply_to_id'] is None and not "RT @" in post['content']:
                     marked = False
                     for attachment in post['media_attachments']:
@@ -68,7 +66,6 @@ class reminder(ananas.PineappleBot):
                         print("[{0:%Y-%m-%d %H:%M:%S}] -> Posting reply.".format(datetime.now()), file=self.log_file, flush=True)
                         self.mastodon.status_post('@'+post['account']['acct']+' hey, just so you know, this status includes an attachment with missing accessibility (alt) text.', in_reply_to_id=(post['id']),visibility='direct')
             self.last_checked_post = posts[0]
-       # print("[{0:%Y-%m-%d %H:%M:%S}] Done checking {1} posts.".format(datetime.now(),len(posts)), file=self.log_file, flush=True)
             
     @ananas.reply
     def delete_post(self, status, user):
@@ -198,7 +195,7 @@ class danboorubot(ananas.PineappleBot):
                 cur.execute(self.select_sql)
                 self.queue = cur.fetchall()
                 random.shuffle(self.queue)
-                self.queue = self.queue[:100]
+                self.queue = self.queue[:10]
                 if len(self.queue) == 0:
                     print("[{0:%Y-%m-%d %H:%M:%S}] No valid entries. Resetting db.".format(datetime.now()), file=self.log_file, flush=True)
                     cur.execute(self.unmark_sql)
