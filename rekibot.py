@@ -81,48 +81,50 @@ class danboorubot(ananas.PineappleBot):
     def check_booru(self):
         conn = sqlite3.connect("%s.db" % self.config._name)
         cur = conn.cursor()
-        badpages=0
-        for page in range(1,301):
-            while True:
-                try:
-                    posts = self.client.post_list(tags=self.config.tag, page=str(page), limit=200)
-                except:
-                    pass
-                else:
-                    break
-            if len(posts) == 0:
-                print("[{0:%Y-%m-%d %H:%M:%S}] Reached last page. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
-                conn.close()
-                break
-            counter=0
-            for post in posts:
-                if (('drawfag' not in post['source'] and '.png' not in post['source'] and '.jpg' not in post['source'] and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and not any(tag in post['tag_string'] for tag in self.excluded_tags) and all(tag in post['tag_string'] for tag in self.mandatory_tags):
-                    if post['pixiv_id'] is not None:
-                        source_url = 'https://www.pixiv.net/artworks/%s' % post['pixiv_id']
-                    else:
-                        source_url = post['source']
-                    if 'file_url' in post:
-                        danbooru_url = post['file_url']
-                    elif 'large_file_url' in post:
-                        danbooru_url = post['large_file_url']
-                    else:
-                        continue
+        for toptag in self.config.tags.split(','):
+            print("[{0:%Y-%m-%d %H:%M:%S}] Pulling from tag {1}.".format(datetime.now(),toptag), file=self.log_file, flush=True)
+            badpages=0
+            for page in range(1,301):
+                while True:
                     try:
-                        cur.execute(self.insert_sql, (int(post['id']),danbooru_url,source_url,post['tag_string']))
-                        conn.commit()
+                        posts = self.client.post_list(tags=toptag, page=str(page), limit=200)
                     except:
                         pass
                     else:
-                        counter=counter+1
-            print("[{0:%Y-%m-%d %H:%M:%S}] Page {1} - inserted {2} entries.".format(datetime.now(),page,counter), file=self.log_file, flush=True)
-            if counter == 0:
-                badpages = badpages+1
-            else:
-                badpages = 0
-            if badpages == 5:
-                print("[{0:%Y-%m-%d %H:%M:%S}] 5 bad pages in a row. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
-                conn.close()
-                break
+                        break
+                if len(posts) == 0:
+                    print("[{0:%Y-%m-%d %H:%M:%S}] Reached last page. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
+                    conn.close()
+                    break
+                counter=0
+                for post in posts:
+                    if (('drawfag' not in post['source'] and '.png' not in post['source'] and '.jpg' not in post['source'] and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and not any(tag in post['tag_string'] for tag in self.excluded_tags) and all(tag in post['tag_string'] for tag in self.mandatory_tags):
+                        if post['pixiv_id'] is not None:
+                            source_url = 'https://www.pixiv.net/artworks/%s' % post['pixiv_id']
+                        else:
+                            source_url = post['source']
+                        if 'file_url' in post:
+                            danbooru_url = post['file_url']
+                        elif 'large_file_url' in post:
+                            danbooru_url = post['large_file_url']
+                        else:
+                            continue
+                        try:
+                            cur.execute(self.insert_sql, (int(post['id']),danbooru_url,source_url,post['tag_string']))
+                            conn.commit()
+                        except:
+                            pass
+                        else:
+                            counter=counter+1
+                print("[{0:%Y-%m-%d %H:%M:%S}] Page {1} - inserted {2} entries.".format(datetime.now(),page,counter), file=self.log_file, flush=True)
+                if counter == 0:
+                    badpages = badpages+1
+                else:
+                    badpages = 0
+                if badpages == 5:
+                    print("[{0:%Y-%m-%d %H:%M:%S}] 5 bad pages in a row. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
+                    conn.close()
+                    break
     
     def start(self):
         self.log_file = open("%s.log" % self.config._name, "a")
