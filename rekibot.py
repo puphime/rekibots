@@ -139,8 +139,16 @@ class danboorubot(ananas.PineappleBot):
         self.playlist=[]
         self.excluded_tags = ['female_pervert','groping','breast_grab','pervert','sexual_harassment','sexually_suggestive','underwear_only','breast_press','topless','dangerous_beast','bottomless','no_panties','spoilers','revealing_clothes','pet_play','eargasm','daijoubu?_oppai_momu?','guro','bdsm','bondage','foot_worship','comic','cameltoe','osomatsu-san','osomatsu-kun','naked_sheet','foot_licking','nude','nude_cover','bunnysuit','randoseru','age_difference','younger','child','incest','you_gonna_get_raped','sisters','kindergarten_uniform','male_focus','1boy','multiple_boys','violence','horror','parody','no_humans','calne_ca','predator','goron','ichigo_mashimaro','manly','upskirt','banned_artist','santa_costume','injury','damaged','swastika','nazi','ss_insignia']
         self.mandatory_tags = ['girl',]
+        self.skip_tags = []
+        self.skip_chance = 50
         if 'excluded_tags' in self.config:
             self.excluded_tags = self.excluded_tags + self.config.excluded_tags.split(',')
+        if 'mandatory_tags' in self.config:
+            self.mandatory_tags = self.mandatory_tags + self.config.mandatory_tags.split(',')
+        if 'skip_tags' in self.config:
+            self.skip_tags = self.skip_tags + self.config.skip_tags.split(',')
+        if 'skip_chance' in self.config:
+            self.skip_chance = int(self.config.skip_chance)
         conn = sqlite3.connect("%s.db" % self.config._name)
         cur = conn.cursor()
         self.create_table_sql = """create table if not exists images (
@@ -154,7 +162,7 @@ class danboorubot(ananas.PineappleBot):
                                 UNIQUE(url_source)
                                );"""
         self.insert_sql = "insert into images(danbooru_id,url_danbooru,url_source,tags) values(?,?,?,?);"
-        self.select_sql = "select danbooru_id,url_danbooru,url_source from images where blacklisted=0 and posted=0;"
+        self.select_sql = "select danbooru_id,url_danbooru,url_source,tags from images where blacklisted=0 and posted=0;"
         self.blacklist_sql = "update images set blacklisted=1 where danbooru_id=?;"
         self.unmark_sql = "update images set posted=0;"
         self.mark_sql = "update images set posted=1 where danbooru_id=?;"
@@ -208,7 +216,11 @@ class danboorubot(ananas.PineappleBot):
                     conn.commit()
                 conn.close()
                 print("[{0:%Y-%m-%d %H:%M:%S}] Refilled queue with {1} entries.".format(datetime.now(),len(self.queue)), file=self.log_file, flush=True)
-            id,url,src = self.queue.pop()
+            id,url,src,tags = self.queue.pop()
+            if any(tag in tags for tag in self.skip_tags):
+                if random.randint(1,100) <= self.skip_chance:
+                    print("[{0:%Y-%m-%d %H:%M:%S}] Skipped {1}.".format(datetime.now(),id), file=self.log_file, flush=True)
+                    continue
             try:
                 url = urllib.request.urlretrieve(url)[0]
                 with open(url,'rb') as file:
