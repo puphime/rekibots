@@ -139,8 +139,8 @@ class danboorubot(ananas.PineappleBot):
         self.playlist=[]
         self.excluded_tags = ['female_pervert','groping','breast_grab','pervert','sexual_harassment','sexually_suggestive','underwear_only','breast_press','topless','dangerous_beast','bottomless','no_panties','spoilers','revealing_clothes','pet_play','eargasm','daijoubu?_oppai_momu?','guro','bdsm','bondage','foot_worship','comic','cameltoe','osomatsu-san','osomatsu-kun','naked_sheet','foot_licking','nude','nude_cover','bunnysuit','randoseru','age_difference','younger','child','incest','you_gonna_get_raped','sisters','kindergarten_uniform','male_focus','1boy','multiple_boys','violence','horror','parody','no_humans','calne_ca','predator','goron','ichigo_mashimaro','manly','upskirt','banned_artist','santa_costume','injury','damaged','swastika','nazi','ss_insignia']
         self.mandatory_tags = ['girl',]
-        self.skip_tags = []
-        self.skip_chance = 50
+        self.skip_tags = ['touhou','madoka_magica']
+        self.skip_chance = 75
         if 'excluded_tags' in self.config:
             self.excluded_tags = self.excluded_tags + self.config.excluded_tags.split(',')
         if 'mandatory_tags' in self.config:
