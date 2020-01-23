@@ -81,24 +81,23 @@ class danboorubot(ananas.PineappleBot):
     def check_booru(self):
         conn = sqlite3.connect("%s.db" % self.config._name)
         cur = conn.cursor()
-        for toptag in self.config.tags.split(','):
-            print("[{0:%Y-%m-%d %H:%M:%S}] Pulling from tag {1}.".format(datetime.now(),toptag), file=self.log_file, flush=True)
+        for t in self.tags:
+            print("[{0:%Y-%m-%d %H:%M:%S}] Pulling from tag {1}.".format(datetime.now(),t), file=self.log_file, flush=True)
             badpages=0
-            for page in range(1,301):
+            for page in range(1,self.max_page+1):
                 while True:
                     try:
-                        posts = self.client.post_list(tags=toptag, page=str(page), limit=200)
+                        posts = self.client.post_list(tags=t, page=str(page), limit=200)
                     except:
-                        pass
+                        continue
                     else:
                         break
                 if len(posts) == 0:
-                    print("[{0:%Y-%m-%d %H:%M:%S}] Reached last page. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
-                    conn.close()
+                    print("[{0:%Y-%m-%d %H:%M:%S}] No more posts. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
                     break
                 counter=0
                 for post in posts:
-                    if (('drawfag' not in post['source'] and '.png' not in post['source'] and '.jpg' not in post['source'] and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and not any(tag in post['tag_string'] for tag in self.excluded_tags) and all(tag in post['tag_string'] for tag in self.mandatory_tags):
+                    if (('drawfag' not in post['source'] and '.png' not in post['source'] and '.jpg' not in post['source'] and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and not any(tag in post['tag_string'] for tag in self.blacklist_tags) and all(tag in post['tag_string'] for tag in self.mandatory_tags):
                         if post['pixiv_id'] is not None:
                             source_url = 'https://www.pixiv.net/artworks/%s' % post['pixiv_id']
                         else:
@@ -111,21 +110,21 @@ class danboorubot(ananas.PineappleBot):
                             continue
                         try:
                             cur.execute(self.insert_sql, (int(post['id']),danbooru_url,source_url,post['tag_string']))
-                            conn.commit()
                         except:
-                            pass
+                            continue
                         else:
                             counter=counter+1
                 print("[{0:%Y-%m-%d %H:%M:%S}] Page {1} - inserted {2} entries.".format(datetime.now(),page,counter), file=self.log_file, flush=True)
                 if counter == 0:
                     badpages = badpages+1
+                    if badpages == self.max_badpages:
+                        print("[{0:%Y-%m-%d %H:%M:%S}] No new posts on {1} pages in a row. Break processing.".format(datetime.now(),badpages), file=self.log_file, flush=True)
+                        break
                 else:
                     badpages = 0
-                if badpages == 10:
-                    print("[{0:%Y-%m-%d %H:%M:%S}] {1} bad pages in a row. Break processing.".format(datetime.now(),badpages), file=self.log_file, flush=True)
-                    conn.close()
-                    break
-    
+        conn.commit()
+        conn.close()
+        
     def start(self):
         self.log_file = open("%s.log" % self.config._name, "a")
         self.mime = magic.Magic(mime=True)
@@ -135,32 +134,42 @@ class danboorubot(ananas.PineappleBot):
         urllib.request.install_opener(self.opener)
         self.client = Danbooru(site_url='https://safebooru.donmai.us')
         self.h = HTMLParser()
+        
         self.queue=[]
-        self.playlist=[]
-        self.excluded_tags = ['female_pervert','groping','breast_grab','pervert','sexual_harassment','sexually_suggestive','underwear_only','breast_press','topless','dangerous_beast','bottomless','no_panties','spoilers','revealing_clothes','pet_play','eargasm','daijoubu?_oppai_momu?','guro','bdsm','bondage','foot_worship','comic','cameltoe','osomatsu-san','osomatsu-kun','naked_sheet','foot_licking','nude','nude_cover','bunnysuit','randoseru','age_difference','younger','child','incest','you_gonna_get_raped','sisters','kindergarten_uniform','male_focus','1boy','multiple_boys','violence','horror','parody','no_humans','calne_ca','predator','goron','ichigo_mashimaro','manly','upskirt','banned_artist','santa_costume','injury','damaged','swastika','nazi','ss_insignia']
+        
+        self.tags = self.config.tags.split(',')
+        
+        self.blacklist_tags = ['female_pervert','groping','breast_grab','pervert','sexual_harassment','sexually_suggestive','underwear_only','breast_press','topless','dangerous_beast','bottomless','no_panties','spoilers','revealing_clothes','pet_play','eargasm','daijoubu?_oppai_momu?','guro','bdsm','bondage','foot_worship','comic','cameltoe','osomatsu-san','osomatsu-kun','naked_sheet','foot_licking','nude','nude_cover','bunnysuit','randoseru','age_difference','younger','child','incest','you_gonna_get_raped','sisters','kindergarten_uniform','male_focus','1boy','multiple_boys','violence','horror','parody','no_humans','calne_ca','predator','goron','ichigo_mashimaro','manly','upskirt','banned_artist','santa_costume','injury','damaged','swastika','nazi','ss_insignia']
         self.mandatory_tags = ['girl',]
         self.skip_tags = ['touhou','madoka_magica']
+        
         self.skip_chance = 75
-        if 'excluded_tags' in self.config:
-            self.excluded_tags = self.excluded_tags + self.config.excluded_tags.split(',')
+        self.max_page = 300
+        self.max_badpages = 10    
+        self.queue_length = 5
+        self.post_every = 30
+        self.offset = 0
+        
+        if 'blacklist_tags' in self.config:
+            self.blacklist_tags = self.blacklist_tags + self.config.blacklist_tags.split(',')
         if 'mandatory_tags' in self.config:
             self.mandatory_tags = self.mandatory_tags + self.config.mandatory_tags.split(',')
         if 'skip_tags' in self.config:
             self.skip_tags = self.skip_tags + self.config.skip_tags.split(',')
         if 'skip_chance' in self.config:
             self.skip_chance = int(self.config.skip_chance)
-        conn = sqlite3.connect("%s.db" % self.config._name)
-        cur = conn.cursor()
-        self.create_table_sql = """create table if not exists images (
-                                danbooru_id integer primary key,
-                                url_danbooru text,
-                                url_source text,
-                                tags text,
-                                posted integer default 0,
-                                blacklisted integer default 0,
-                                UNIQUE(url_danbooru),
-                                UNIQUE(url_source)
-                               );"""
+        if 'max_page' in self.config:
+            self.max_page = int(self.config.max_page)
+        if 'max_badpages' in self.config:
+            self.max_badpages = int(self.config.max_badpages)
+        if 'queue_length' in self.config:
+            self.queue_length = int(self.config.queue_length)
+        if 'post_every' in self.config:
+            self.post_every = int(self.config.post_every)
+        if 'offset' in self.config:
+            self.offset = int(self.config.offset)
+        
+        self.create_table_sql = "create table if not exists images (danbooru_id integer primary key,url_danbooru text,url_source text,tags text,posted integer default 0,blacklisted integer default 0,UNIQUE(url_danbooru),UNIQUE(url_source));"
         self.insert_sql = "insert into images(danbooru_id,url_danbooru,url_source,tags) values(?,?,?,?);"
         self.select_sql = "select danbooru_id,url_danbooru,url_source,tags from images where blacklisted=0 and posted=0;"
         self.blacklist_sql = "update images set blacklisted=1 where danbooru_id=?;"
@@ -170,34 +179,73 @@ class danboorubot(ananas.PineappleBot):
         self.migrate_db_sql2 = "update images set blacklisted=1 where danbooru_id in (select danbooru_id from images_old where blacklisted=1);"
         self.migrate_db_sql3 = "update images set posted=1 where danbooru_id in (select danbooru_id from images_old where posted=1);"
         self.migrate_db_sql4 = "drop table images_old;"
-
-        if self.config.migratedb == "yes":
-            print("[{0:%Y-%m-%d %H:%M:%S}] ALTER TABLE.".format(datetime.now()), file=self.log_file, flush=True)
-            cur.execute(self.migrate_db_sql1)
+        
+        conn = sqlite3.connect("%s.db" % self.config._name)
+        cur = conn.cursor()
+        
+        if 'migratedb' in self.config and self.config.migratedb == "yes":
+            try:
+                print("[{0:%Y-%m-%d %H:%M:%S}] ALTER TABLE images RENAME TO images_old;".format(datetime.now()), file=self.log_file, flush=True)
+                cur.execute(self.migrate_db_sql1)
+            except Exception as e:
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}".format(datetime.now(),e), file=self.log_file, flush=True)
+                conn.rollback()
+                conn.close()
+                return
+                
         cur.execute(self.create_table_sql)
         conn.commit()
         conn.close()
+        
         self.check_booru()
-        if self.config.migratedb == "yes":
+        
+        if 'migratedb' in self.config and self.config.migratedb == "yes":
             conn = sqlite3.connect("%s.db" % self.config._name)
             cur = conn.cursor()
-            print("[{0:%Y-%m-%d %H:%M:%S}] UPDATE.".format(datetime.now()), file=self.log_file, flush=True)
-            cur.execute(self.migrate_db_sql2)
-            print("[{0:%Y-%m-%d %H:%M:%S}] UPDATE.".format(datetime.now()), file=self.log_file, flush=True)
+            
             try:
+                print("[{0:%Y-%m-%d %H:%M:%S}] UPDATE images SET blacklisted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE blacklisted=1);".format(datetime.now()), file=self.log_file, flush=True)
+                cur.execute(self.migrate_db_sql2)
+            except Exception as e:
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}".format(datetime.now(),e), file=self.log_file, flush=True)
+                conn.rollback()
+                conn.close()
+                return
+            
+            try:
+                print("[{0:%Y-%m-%d %H:%M:%S}] UPDATE images SET posted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE posted=1);".format(datetime.now()), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql3)
             except Exception as e:
                 print("[{0:%Y-%m-%d %H:%M:%S}] {1}".format(datetime.now(),e), file=self.log_file, flush=True)
-            print("[{0:%Y-%m-%d %H:%M:%S}] DROP TABLE.".format(datetime.now()), file=self.log_file, flush=True)
-            cur.execute(self.migrate_db_sql4)
+                conn.rollback()
+                conn.close()
+                return
+                
+            try:
+                print("[{0:%Y-%m-%d %H:%M:%S}] DROP TABLE images_old;".format(datetime.now()), file=self.log_file, flush=True)
+                cur.execute(self.migrate_db_sql4)
+            except Exception as e:
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}".format(datetime.now(),e), file=self.log_file, flush=True)
+                conn.rollback()
+                conn.close()
+                return
+                
             conn.commit()
             conn.close()
-            print("[{0:%Y-%m-%d %H:%M:%S}] MIGRATE OK.".format(datetime.now()), file=self.log_file, flush=True)
+            print("[{0:%Y-%m-%d %H:%M:%S}] Database rebuild with migration completed OK.".format(datetime.now()), file=self.log_file, flush=True)
             self.config.migratedb="no"
-
+            
+    def blacklist(id):
+        conn = sqlite3.connect("%s.db" % self.config._name)
+        cur = conn.cursor()
+        cur.execute(self.blacklist_sql, (id,))
+        conn.commit()
+        conn.close()
+        print("[{0:%Y-%m-%d %H:%M:%S}] Blacklisted http://danbooru.donmai.us/posts/{1}".format(datetime.now(),id), file=self.log_file, flush=True)
+        
     @ananas.schedule(minute="*")
     def post(self):
-        if datetime.now().minute != int(self.config.offset) and datetime.now().minute != int(self.config.offset)+30: 
+        if not any(datetime.now().minute==x+self.offset for x in range(0,60,self.post_every)):
             return
         while True:
             while len(self.queue) == 0:
@@ -206,7 +254,7 @@ class danboorubot(ananas.PineappleBot):
                 cur.execute(self.select_sql)
                 self.queue = cur.fetchall()
                 random.shuffle(self.queue)
-                self.queue = self.queue[:10]
+                self.queue = self.queue[:self.queue_length]
                 if len(self.queue) == 0:
                     print("[{0:%Y-%m-%d %H:%M:%S}] No valid entries. Resetting db.".format(datetime.now()), file=self.log_file, flush=True)
                     cur.execute(self.unmark_sql)
@@ -217,6 +265,8 @@ class danboorubot(ananas.PineappleBot):
                 conn.close()
                 print("[{0:%Y-%m-%d %H:%M:%S}] Refilled queue with {1} entries.".format(datetime.now(),len(self.queue)), file=self.log_file, flush=True)
             id,url,src,tags = self.queue.pop()
+            if any(tag in tags for tag in self.blacklist_tags):
+                self.blacklist(id)
             if any(tag in tags for tag in self.skip_tags):
                 if random.randint(1,100) <= self.skip_chance:
                     print("[{0:%Y-%m-%d %H:%M:%S}] Skipped {1}.".format(datetime.now(),id), file=self.log_file, flush=True)
@@ -228,7 +278,7 @@ class danboorubot(ananas.PineappleBot):
                 status_text = 'http://danbooru.donmai.us/posts/{0}\r\nsource: {1}'.format(id,src)
                 self.mastodon.status_post(status_text, in_reply_to_id=None, media_ids=(mediadict['id'],), sensitive=True, visibility="unlisted", spoiler_text=None)
             except Exception as e:
-                print("[{0:%Y-%m-%d %H:%M:%S}] Post id {1} {2}".format(datetime.now(),id,e), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] Post http://danbooru.donmai.us/posts/{1} threw exception: {2}".format(datetime.now(),id,e), file=self.log_file, flush=True)
                 continue
             else:
                 print("[{0:%Y-%m-%d %H:%M:%S}] Posted.".format(datetime.now()), file=self.log_file, flush=True)
@@ -248,12 +298,7 @@ class danboorubot(ananas.PineappleBot):
                 text = self.h.unescape(text)
                 id = re.search("posts\/([0-9]+)source",text)
                 id = id.groups()[0]
-                conn = sqlite3.connect("%s.db" % self.config._name)
-                cur = conn.cursor()
-                cur.execute(self.blacklist_sql, (id,))
-                conn.commit()
-                conn.close()
-                print("[{0:%Y-%m-%d %H:%M:%S}] Blacklisted {1}".format(datetime.now(),id), file=self.log_file, flush=True)
+                self.blacklist(id)
             elif 'announce! ' in status['content']:
                 text = re.sub('<[^<]+?>', '', status['content'])
                 text = self.h.unescape(text)
