@@ -69,7 +69,7 @@ class reminder(ananas.PineappleBot):
             
     @ananas.reply
     def delete_post(self, status, user):
-        if user['acct'] == 'pup_hime@slime.global':
+        if user['acct'] == self.config.admin:
             if 'delete this!' in status['content']:
                 self.mastodon.status_delete(status['in_reply_to_id'])
             elif '!announce' in status['content']:
@@ -97,7 +97,7 @@ class danboorubot(ananas.PineappleBot):
                     break
                 counter=0
                 for post in posts:
-                    if (('drawfag' not in post['source'] and '.png' not in post['source'] and '.jpg' not in post['source'] and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and not any(tag in post['tag_string'] for tag in self.blacklist_tags) and all(tag in post['tag_string'] for tag in self.mandatory_tags):
+                    if (('drawfag' not in post['source'] and '.png' not in post['source'] and '.jpg' not in post['source'] and '.gif' not in post['source'] and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and not any(tag in post['tag_string'].split(" ") for tag in self.blacklist_tags) and any(tag in post['tag_string'].split(" ") for tag in self.mandatory_tags):
                         if post['pixiv_id'] is not None:
                             source_url = 'https://www.pixiv.net/artworks/%s' % post['pixiv_id']
                         else:
@@ -139,9 +139,15 @@ class danboorubot(ananas.PineappleBot):
         
         self.tags = self.config.tags.split(',')
         
-        self.blacklist_tags = ['female_pervert','groping','breast_grab','pervert','sexual_harassment','sexually_suggestive','underwear_only','breast_press','topless','dangerous_beast','bottomless','no_panties','spoilers','revealing_clothes','pet_play','eargasm','daijoubu?_oppai_momu?','guro','bdsm','bondage','foot_worship','comic','cameltoe','osomatsu-san','osomatsu-kun','naked_sheet','foot_licking','nude','nude_cover','bunnysuit','randoseru','age_difference','younger','child','incest','you_gonna_get_raped','sisters','kindergarten_uniform','male_focus','1boy','multiple_boys','violence','horror','parody','no_humans','calne_ca','predator','goron','ichigo_mashimaro','manly','upskirt','banned_artist','santa_costume','injury','damaged','swastika','nazi','ss_insignia','everyone']
-        self.mandatory_tags = ['girl',]
-        self.skip_tags = ['touhou','madoka_magica']
+        self.blacklist_tags = ['female_pervert','groping','breast_grab','pervert','sexual_harassment','sexually_suggestive','underwear_only',
+                               'breast_press','topless','dangerous_beast','bottomless','no_panties','spoilers','revealing_clothes','pet_play',
+                               'eargasm','daijoubu?_oppai_momu?','guro','bdsm','bondage','foot_worship','comic','cameltoe','osomatsu-san',
+                               'osomatsu-kun','naked_sheet','foot_licking','nude','nude_cover','bunnysuit','randoseru','age_difference',
+                               'younger','child','incest','you_gonna_get_raped','sisters','kindergarten_uniform','male_focus','1boy',
+                               'multiple_boys','violence','horror','parody','no_humans','calne_ca','predator','goron','ichigo_mashimaro',
+                               'manly','upskirt','banned_artist','santa_costume','injury','damaged','swastika','nazi','ss_insignia','everyone']
+        self.mandatory_tags = ['1girl','2girls','3girls','4girls','5girls','6+girls','multiple_girls']
+        self.skip_tags = ['touhou','mahou_shoujo_madoka_magica']
         
         self.skip_chance = 75
         self.max_page = 300
@@ -212,22 +218,8 @@ class danboorubot(ananas.PineappleBot):
             try:
                 print("[{0:%Y-%m-%d %H:%M:%S}] UPDATE images SET blacklisted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE blacklisted=1);".format(datetime.now()), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql2)
-            except Exception as e:
-                print("[{0:%Y-%m-%d %H:%M:%S}] {1}".format(datetime.now(),e), file=self.log_file, flush=True)
-                conn.rollback()
-                conn.close()
-                return
-            
-            try:
                 print("[{0:%Y-%m-%d %H:%M:%S}] UPDATE images SET posted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE posted=1);".format(datetime.now()), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql3)
-            except Exception as e:
-                print("[{0:%Y-%m-%d %H:%M:%S}] {1}".format(datetime.now(),e), file=self.log_file, flush=True)
-                conn.rollback()
-                conn.close()
-                return
-                
-            try:
                 print("[{0:%Y-%m-%d %H:%M:%S}] DROP TABLE images_old;".format(datetime.now()), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql4)
             except Exception as e:
@@ -271,10 +263,10 @@ class danboorubot(ananas.PineappleBot):
                 conn.close()
                 print("[{0:%Y-%m-%d %H:%M:%S}] Refilled queue with {1} entries.".format(datetime.now(),len(self.queue)), file=self.log_file, flush=True)
             id,url,src,tags = self.queue.pop()
-            if any(tag in tags for tag in self.blacklist_tags):
+            if any(tag in tags.split(" ") for tag in self.blacklist_tags):
                 self.blacklist(id)
                 continue
-            if any(tag in tags for tag in self.skip_tags):
+            if any(tag in tags.split(" ") for tag in self.skip_tags):
                 if random.randint(1,100) <= self.skip_chance:
                     print("[{0:%Y-%m-%d %H:%M:%S}] Skipped {1}.".format(datetime.now(),id), file=self.log_file, flush=True)
                     continue
@@ -297,7 +289,7 @@ class danboorubot(ananas.PineappleBot):
 
     @ananas.reply
     def handle_reply(self, status, user):
-        if user['acct'] == 'pup_hime@slime.global':
+        if user['acct'] == self.config.admin:
             if 'delete this!' in status['content']:
                 status_in_question = self.mastodon.status(status['in_reply_to_id'])
                 self.mastodon.status_delete(status['in_reply_to_id'])

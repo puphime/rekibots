@@ -8,9 +8,9 @@ Clone, make sure rekibot.py is on your PYTHONPATH, setup a configuration file ac
 
 ## Config entries
 
-### Danbooru bot
-
 `class`: `rekibot.danboorubot` for image bot, or `rekibot.reminder` for alt text reminder bot
+
+### Danbooru bot
 
 `tags`: [REQUIRED] comma-separated booru tags to use for search in the api ex. `"gun,handgun,rifle,shotgun,tactical_clothes"`
 
