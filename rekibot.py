@@ -139,7 +139,7 @@ class danboorubot(ananas.PineappleBot):
         
         self.tags = self.config.tags.split(',')
         
-        self.blacklist_tags = ['female_pervert','groping','breast_grab','pervert','sexual_harassment','sexually_suggestive','underwear_only','breast_press','topless','dangerous_beast','bottomless','no_panties','spoilers','revealing_clothes','pet_play','eargasm','daijoubu?_oppai_momu?','guro','bdsm','bondage','foot_worship','comic','cameltoe','osomatsu-san','osomatsu-kun','naked_sheet','foot_licking','nude','nude_cover','bunnysuit','randoseru','age_difference','younger','child','incest','you_gonna_get_raped','sisters','kindergarten_uniform','male_focus','1boy','multiple_boys','violence','horror','parody','no_humans','calne_ca','predator','goron','ichigo_mashimaro','manly','upskirt','banned_artist','santa_costume','injury','damaged','swastika','nazi','ss_insignia']
+        self.blacklist_tags = ['female_pervert','groping','breast_grab','pervert','sexual_harassment','sexually_suggestive','underwear_only','breast_press','topless','dangerous_beast','bottomless','no_panties','spoilers','revealing_clothes','pet_play','eargasm','daijoubu?_oppai_momu?','guro','bdsm','bondage','foot_worship','comic','cameltoe','osomatsu-san','osomatsu-kun','naked_sheet','foot_licking','nude','nude_cover','bunnysuit','randoseru','age_difference','younger','child','incest','you_gonna_get_raped','sisters','kindergarten_uniform','male_focus','1boy','multiple_boys','violence','horror','parody','no_humans','calne_ca','predator','goron','ichigo_mashimaro','manly','upskirt','banned_artist','santa_costume','injury','damaged','swastika','nazi','ss_insignia','everyone']
         self.mandatory_tags = ['girl',]
         self.skip_tags = ['touhou','madoka_magica']
         
@@ -267,6 +267,7 @@ class danboorubot(ananas.PineappleBot):
             id,url,src,tags = self.queue.pop()
             if any(tag in tags for tag in self.blacklist_tags):
                 self.blacklist(id)
+                continue
             if any(tag in tags for tag in self.skip_tags):
                 if random.randint(1,100) <= self.skip_chance:
                     print("[{0:%Y-%m-%d %H:%M:%S}] Skipped {1}.".format(datetime.now(),id), file=self.log_file, flush=True)
