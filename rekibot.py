@@ -197,7 +197,13 @@ class danboorubot(ananas.PineappleBot):
         conn.commit()
         conn.close()
         
-        self.check_booru()
+        conn = sqlite3.connect("%s.db" % self.config._name)
+        cur = conn.cursor()
+        
+        cur.execute(self.select_sql)
+        if len(cur.fetchall())==0:
+            self.check_booru()
+        conn.close()
         
         if 'migratedb' in self.config and self.config.migratedb == "yes":
             conn = sqlite3.connect("%s.db" % self.config._name)
@@ -235,7 +241,7 @@ class danboorubot(ananas.PineappleBot):
             print("[{0:%Y-%m-%d %H:%M:%S}] Database rebuild with migration completed OK.".format(datetime.now()), file=self.log_file, flush=True)
             self.config.migratedb="no"
             
-    def blacklist(id):
+    def blacklist(self,id):
         conn = sqlite3.connect("%s.db" % self.config._name)
         cur = conn.cursor()
         cur.execute(self.blacklist_sql, (id,))
