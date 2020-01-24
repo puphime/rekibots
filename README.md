@@ -9,12 +9,7 @@ Clone, make sure rekibot.py is on your PYTHONPATH, setup a configuration file ac
 ## Config entries
 
 ### Danbooru bot
-self.skip_chance = 75
-        self.max_page = 300
-        self.max_badpages = 10    
-        self.queue_length = 5
-        self.post_every = 30
-        self.offset = 0
+
 `class`: `rekibot.danboorubot` for image bot, or `rekibot.reminder` for alt text reminder bot
 
 `tags`: [REQUIRED] comma-separated booru tags to use for search in the api ex. `"gun,handgun,rifle,shotgun,tactical_clothes"`
