@@ -303,3 +303,22 @@ class danboorubot(ananas.PineappleBot):
                 text = self.h.unescape(text)
                 self.mastodon.status_post(text.split('announce! ')[-1], in_reply_to_id=None, media_ids=None, sensitive=False, visibility="unlisted", spoiler_text=None)
         
+
+class admin_cleaner(ananas.PineappleBot):
+    def start(self):
+        self.log_file = open("%s.log" % self.config._name, "a")
+        self.me = self.mastodon.account_verify_credentials()
+        self.last_checked_post = "103533885806295003"
+    
+    @ananas.schedule(minute=0)
+    def check_posts(self):
+        posts = self.mastodon.account_statuses(self.me['id'],since_id=self.last_checked_post)
+        if len(posts)>0:
+            for post in posts:
+                if "delete this!" in post['content']:
+                    self.mastodon.status_delete(post['id'])
+                    print("[{0:%Y-%m-%d %H:%M:%S}] Found deleter post id {1}.".format(datetime.now(),post['id']), file=self.log_file, flush=True)
+                if "announce! " in post['content']:
+                    self.mastodon.status_delete(post['id'])
+                    print("[{0:%Y-%m-%d %H:%M:%S}] Found announcer post id {1}.".format(datetime.now(),post['id']), file=self.log_file, flush=True)
+            self.last_checked_post = posts[0]
