@@ -16,11 +16,13 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 `tags`: [REQUIRED] comma-separated booru tags to use for search in the api ex. `"gun,handgun,rifle,shotgun,tactical_clothes"`
 
-`blacklist_tags`: (default = `"spoilers,guro,bdsm,bondage,foot_worship,comic,naked_sheet,foot_licking,nude,nude_cover,randoseru,kindergarten_uniform,male_focus,1boy,2boys,3boys,4boys,5boys,6+boys,multiple_boys,horror,parody,no_humans,manly,banned_artist,swastika,nazi,ss_insignia,everyone,giantess"`) (adds to default, not replaces) comma-separated booru tags to be blacklisted.
+`blacklist_tags`: (default = "") comma-separated booru tags to be blacklisted.
 
-`mandatory_tags`: (default = `"1girl,2girls,3girls,4girls,5girls,6+girls,multiple_girls"`) (adds to default, not replaces) comma-separated booru tags. Any of them must appear in the post to be posted.
+`mandatory_tags`: (default = "") comma-separated booru tags. Any of them must appear in the post to be posted.
 
-`skip_tags`: (default = `"mahou_shoujo_madoka_magica,touhou,santa_costume"`) (adds to default, not replaces) comma-separated booru tags to have a chance to skip over when posting (eg. if a tag is overrepresented in the database, or you just don't like it).
+`skip_tags`: (default = "") comma-separated booru tags to have a chance to skip over when posting (eg. if a tag is overrepresented in the database, or you just don't like it).
+
+`mandatory_tag_mode`: (default = any) require any or all mandatory tags (only accepts any|all)
 
 `skip_chance`: (default = 75) percentage chance of skipping over a post containing a tag listed in `skip_tags`.
 

@@ -102,12 +102,11 @@ class danboorubot(ananas.PineappleBot):
         
         self.tags = self.config.tags.split(',')
         
-        self.blacklist_tags = ['spoilers','guro','bdsm','bondage','foot_worship','comic','naked_sheet','foot_licking','nude','nude_cover','randoseru','kindergarten_uniform',
-                               'male_focus','1boy','2boys','3boys','4boys','5boys','6+boys','multiple_boys','horror','parody','no_humans','manly','banned_artist',
-                               'swastika','nazi','ss_insignia','everyone','giantess']
-        self.mandatory_tags = ['1girl','2girls','3girls','4girls','5girls','6+girls','multiple_girls']
-        self.skip_tags = ['touhou','mahou_shoujo_madoka_magica','santa_costume']
+        self.blacklist_tags = []
+        self.mandatory_tags = []
+        self.skip_tags = []
         
+        self.mandatory_tag_mode = 'any'
         self.skip_chance = 75
         self.max_page = 300
         self.max_badpages = 10    
@@ -115,24 +114,26 @@ class danboorubot(ananas.PineappleBot):
         self.post_every = 30
         self.offset = 0
         
-        #can probably replace this with a loop later
+        #can probably replace this with a loop later?
         if 'blacklist_tags' in self.config and len(self.config.blacklist_tags)>0:
-            self.blacklist_tags = self.blacklist_tags + self.config.blacklist_tags.split(',')
+            self.blacklist_tags = self.config.blacklist_tags.split(',')
         if 'mandatory_tags' in self.config and len(self.config.mandatory_tags)>0:
-            self.mandatory_tags = self.mandatory_tags + self.config.mandatory_tags.split(',')
+            self.mandatory_tags = self.config.mandatory_tags.split(',')
         if 'skip_tags' in self.config and len(self.config.skip_tags)>0:
-            self.skip_tags = self.skip_tags + self.config.skip_tags.split(',')
-        if 'skip_chance' in self.config and len(self.config.skip_chance)>0:
+            self.skip_tags = self.config.skip_tags.split(',')
+        if 'mandatory_tag_mode' in self.config and self.config.mandatory_tag_mode in ['any','all']:
+            self.mandatory_tag_mode = self.config.mandatory_tag_mode
+        if 'skip_chance' in self.config and self.config.skip_chance.isdigit():
             self.skip_chance = int(self.config.skip_chance)
-        if 'max_page' in self.config and len(self.config.max_page)>0:
+        if 'max_page' in self.config and self.config.max_page.isdigit():
             self.max_page = int(self.config.max_page)
-        if 'max_badpages' in self.config and len(self.config.max_badpages)>0:
+        if 'max_badpages' in self.config and self.config.max_badpages.isdigit():
             self.max_badpages = int(self.config.max_badpages)
-        if 'queue_length' in self.config and len(self.config.queue_length)>0:
+        if 'queue_length' in self.config and self.config.queue_length.isdigit():
             self.queue_length = int(self.config.queue_length)
-        if 'post_every' in self.config and len(self.config.post_every)>0:
+        if 'post_every' in self.config and self.config.post_every.isdigit():
             self.post_every = int(self.config.post_every)
-        if 'offset' in self.config and len(self.config.offset)>0:
+        if 'offset' in self.config and self.config.offset.isdigit():
             self.offset = int(self.config.offset)
         
         self.create_table_sql = "create table if not exists images (danbooru_id integer primary key,url_danbooru text,url_source text,tags text,posted integer default 0,blacklisted integer default 0,UNIQUE(url_danbooru),UNIQUE(url_source));"
@@ -211,7 +212,7 @@ class danboorubot(ananas.PineappleBot):
                     break
                 counter=0
                 for post in posts:
-                    if (('drawfag' not in post['source'] and '.png' not in post['source'] and '.jpg' not in post['source'] and '.gif' not in post['source'] and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and not any(tag in post['tag_string'].split(" ") for tag in self.blacklist_tags) and any(tag in post['tag_string'].split(" ") for tag in self.mandatory_tags):
+                    if ((not any(x in post['source'].lower() for x in ['drawfag','.png','.jpg','.gif']) and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and (not any(tag in post['tag_string'].split(" ") for tag in self.blacklist_tags) or len(self.blacklist_tags)==0) and ((self.mandatory_tag_mode=='any' and any(tag in post['tag_string'].split(" ") for tag in self.mandatory_tags)) or (self.mandatory_tag_mode=='all' and all(tag in post['tag_string'].split(" ") for tag in self.mandatory_tags)) or len(self.mandatory_tags)==0):
                         if post['pixiv_id'] is not None:
                             source_url = 'https://www.pixiv.net/artworks/{0}'.format(post['pixiv_id'])
                         else:
@@ -269,10 +270,10 @@ class danboorubot(ananas.PineappleBot):
                 conn.close()
                 print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Refilled queue with {2} entries.".format(datetime.now(),self.config._name,len(self.queue)), file=self.log_file, flush=True)
             id,url,src,tags = self.queue.pop()
-            if any(tag in tags.split(" ") for tag in self.blacklist_tags):
+            if len(self.blacklist_tags)>0 and any(tag in tags.split(" ") for tag in self.blacklist_tags):
                 self.blacklist(id)
                 continue
-            if any(tag in tags.split(" ") for tag in self.skip_tags):
+            if len(self.skip_tags)>0 and any(tag in tags.split(" ") for tag in self.skip_tags):
                 if random.randint(1,100) <= self.skip_chance:
                     print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Skipped {2}.".format(datetime.now(),self.config._name,id), file=self.log_file, flush=True)
                     continue
