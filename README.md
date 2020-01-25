@@ -6,6 +6,8 @@ Prerequisites: python 3, ananas with prereqs (from pypi), pybooru with prereqs (
 ## Setup
 Clone, make sure rekibot.py is on your PYTHONPATH, setup a configuration file according to the instructions for Ananas and below and launch with ananas config.cfg -i. Proceed with the instructions. Next time run without the -i.
 
+For an example config see https://github.com/puphime/rekibots/blob/master/debug.cfg
+
 ## Config entries
 
 `class`: `rekibot.danboorubot` for image bot, or `rekibot.reminder` for alt text reminder bot
