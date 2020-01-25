@@ -46,18 +46,18 @@ class reminder(ananas.PineappleBot):
                         if "moved" in self.mastodon.account(follower):
                             self.mastodon.account_block(follower)
                             self.mastodon.account_unblock(follower)
-                            print("[{0:%Y-%m-%d %H:%M:%S}] Softblocked user {1}.".format(datetime.now(),str(follower)), file=self.log_file, flush=True)
+                            print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Softblocked user {2}.".format(datetime.now(),self.config._name,str(follower)), file=self.log_file, flush=True)
                         else:
                             ret=self.mastodon.account_follow(follower,reblogs=False)
-                            print("[{0:%Y-%m-%d %H:%M:%S}] Attempted to follow user {1}.".format(datetime.now(),str(follower)), file=self.log_file, flush=True)
+                            print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Attempted to follow user {2}.".format(datetime.now(),self.config._name,str(follower)), file=self.log_file, flush=True)
             for followed in followingids:
                 if followed not in followerids:
                     time.sleep(1)
                     if not self.mastodon.account_relationships(followed)[0]['requested']:
                         self.mastodon.account_unfollow(followed) 
-                        print("[{0:%Y-%m-%d %H:%M:%S}] Unfollowed user {1}.".format(datetime.now(),str(followed)), file=self.log_file, flush=True)
+                        print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Unfollowed user {2}.".format(datetime.now(),self.config._name,str(followed)), file=self.log_file, flush=True)
         except Exception as e:
-            print("[{0:%Y-%m-%d %H:%M:%S}] {1}".format(datetime.now(),e), file=self.log_file, flush=True)
+            print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: {2}".format(datetime.now(),self.config._name,e), file=self.log_file, flush=True)
    
     @ananas.schedule(minute="*", second=0)
     def check_posts(self):
@@ -70,7 +70,7 @@ class reminder(ananas.PineappleBot):
                         if attachment['description'] is None:
                             marked = True
                     if marked:
-                        print("[{0:%Y-%m-%d %H:%M:%S}] -> Posting reply.".format(datetime.now()), file=self.log_file, flush=True)
+                        print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: -> Posting reply.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                         self.mastodon.status_post('@'+post['account']['acct']+' hey, just so you know, this status includes an attachment with missing accessibility (alt) text.', in_reply_to_id=(post['id']),visibility='direct')
             self.last_checked_post = posts[0]
             
@@ -104,7 +104,7 @@ class danboorubot(ananas.PineappleBot):
         
         self.blacklist_tags = ['spoilers','guro','bdsm','bondage','foot_worship','comic','naked_sheet','foot_licking','nude','nude_cover','randoseru','kindergarten_uniform',
                                'male_focus','1boy','2boys','3boys','4boys','5boys','6+boys','multiple_boys','horror','parody','no_humans','manly','banned_artist',
-                               'swastika','nazi','ss_insignia','everyone','loli']
+                               'swastika','nazi','ss_insignia','everyone','giantess']
         self.mandatory_tags = ['1girl','2girls','3girls','4girls','5girls','6+girls','multiple_girls']
         self.skip_tags = ['touhou','mahou_shoujo_madoka_magica','santa_costume']
         
@@ -145,15 +145,15 @@ class danboorubot(ananas.PineappleBot):
         self.migrate_db_sql3 = "update images set posted=1 where danbooru_id in (select danbooru_id from images_old where posted=1);"
         self.migrate_db_sql4 = "drop table images_old;"
         
-        conn = sqlite3.connect("%s.db" % self.config._name)
+        conn = sqlite3.connect("{0}.db".format(self.config._name))
         cur = conn.cursor()
         
         if 'migratedb' in self.config and self.config.migratedb == "yes":
             try:
-                print("[{0:%Y-%m-%d %H:%M:%S}] ALTER TABLE images RENAME TO images_old;".format(datetime.now()), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: ALTER TABLE images RENAME TO images_old;".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql1)
             except Exception as e:
-                print("[{0:%Y-%m-%d %H:%M:%S}] {1}".format(datetime.now(),e), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: {2}".format(datetime.now(),self.config._name,e), file=self.log_file, flush=True)
                 conn.rollback()
                 conn.close()
                 return
@@ -162,7 +162,7 @@ class danboorubot(ananas.PineappleBot):
         conn.commit()
         conn.close()
         
-        conn = sqlite3.connect("%s.db" % self.config._name)
+        conn = sqlite3.connect("{0}.db".format(self.config._name))
         cur = conn.cursor()
         
         cur.execute(self.select_sql)
@@ -171,31 +171,31 @@ class danboorubot(ananas.PineappleBot):
         conn.close()
         
         if 'migratedb' in self.config and self.config.migratedb == "yes":
-            conn = sqlite3.connect("%s.db" % self.config._name)
+            conn = sqlite3.connect("{0}.db".format(self.config._name))
             cur = conn.cursor()
             try:
-                print("[{0:%Y-%m-%d %H:%M:%S}] UPDATE images SET blacklisted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE blacklisted=1);".format(datetime.now()), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: UPDATE images SET blacklisted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE blacklisted=1);".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql2)
-                print("[{0:%Y-%m-%d %H:%M:%S}] UPDATE images SET posted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE posted=1);".format(datetime.now()), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: UPDATE images SET posted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE posted=1);".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql3)
-                print("[{0:%Y-%m-%d %H:%M:%S}] DROP TABLE images_old;".format(datetime.now()), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: DROP TABLE images_old;".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql4)
             except Exception as e:
-                print("[{0:%Y-%m-%d %H:%M:%S}] {1}".format(datetime.now(),e), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: {2}".format(datetime.now(),self.config._name,e), file=self.log_file, flush=True)
                 conn.rollback()
                 conn.close()
                 return
                 
             conn.commit()
             conn.close()
-            print("[{0:%Y-%m-%d %H:%M:%S}] Database rebuild with migration completed OK.".format(datetime.now()), file=self.log_file, flush=True)
+            print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Database rebuild with migration completed OK.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
             self.config.migratedb="no"
             
     def check_booru(self):
-        conn = sqlite3.connect("%s.db" % self.config._name)
+        conn = sqlite3.connect("{0}.db".format(self.config._name))
         cur = conn.cursor()
         for t in self.tags:
-            print("[{0:%Y-%m-%d %H:%M:%S}] Pulling from tag {1}.".format(datetime.now(),t), file=self.log_file, flush=True)
+            print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Pulling from tag '{2}'.".format(datetime.now(),self.config._name,t), file=self.log_file, flush=True)
             badpages=0
             for page in range(1,self.max_page+1):
                 while True:
@@ -206,13 +206,13 @@ class danboorubot(ananas.PineappleBot):
                     else:
                         break
                 if len(posts) == 0:
-                    print("[{0:%Y-%m-%d %H:%M:%S}] No more posts. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
+                    print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: No more posts. Break processing.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                     break
                 counter=0
                 for post in posts:
                     if (('drawfag' not in post['source'] and '.png' not in post['source'] and '.jpg' not in post['source'] and '.gif' not in post['source'] and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and not any(tag in post['tag_string'].split(" ") for tag in self.blacklist_tags) and any(tag in post['tag_string'].split(" ") for tag in self.mandatory_tags):
                         if post['pixiv_id'] is not None:
-                            source_url = 'https://www.pixiv.net/artworks/%s' % post['pixiv_id']
+                            source_url = 'https://www.pixiv.net/artworks/{0}'.format(post['pixiv_id'])
                         else:
                             source_url = post['source']
                         if 'file_url' in post:
@@ -227,11 +227,11 @@ class danboorubot(ananas.PineappleBot):
                             continue
                         else:
                             counter=counter+1
-                print("[{0:%Y-%m-%d %H:%M:%S}] Page {1} - inserted {2} entries.".format(datetime.now(),page,counter), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Page {2} - inserted {3} entries.".format(datetime.now(),self.config._name,page,counter), file=self.log_file, flush=True)
                 if counter == 0:
                     badpages = badpages+1
                     if badpages == self.max_badpages:
-                        print("[{0:%Y-%m-%d %H:%M:%S}] No new posts on {1} pages in a row. Break processing.".format(datetime.now(),badpages), file=self.log_file, flush=True)
+                        print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: No new posts on {2} pages in a row. Break processing.".format(datetime.now(),self.config._name,badpages), file=self.log_file, flush=True)
                         break
                 else:
                     badpages = 0
@@ -239,12 +239,12 @@ class danboorubot(ananas.PineappleBot):
         conn.close()
         
     def blacklist(self,id):
-        conn = sqlite3.connect("%s.db" % self.config._name)
+        conn = sqlite3.connect("{0}.db".format(self.config._name))
         cur = conn.cursor()
         cur.execute(self.blacklist_sql, (id,))
         conn.commit()
         conn.close()
-        print("[{0:%Y-%m-%d %H:%M:%S}] Blacklisted http://danbooru.donmai.us/posts/{1}".format(datetime.now(),id), file=self.log_file, flush=True)
+        print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Blacklisted http://danbooru.donmai.us/posts/{2}".format(datetime.now(),self.config._name,id), file=self.log_file, flush=True)
         
     @ananas.schedule(minute="*")
     def post(self):
@@ -252,28 +252,28 @@ class danboorubot(ananas.PineappleBot):
             return
         while True:
             while len(self.queue) == 0:
-                conn = sqlite3.connect("%s.db" % self.config._name)
+                conn = sqlite3.connect("{0}.db".format(self.config._name))
                 cur = conn.cursor()
                 cur.execute(self.select_sql)
                 self.queue = cur.fetchall()
                 random.shuffle(self.queue)
                 self.queue = self.queue[:self.queue_length]
                 if len(self.queue) == 0:
-                    print("[{0:%Y-%m-%d %H:%M:%S}] No valid entries. Resetting db.".format(datetime.now()), file=self.log_file, flush=True)
+                    print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: No valid entries. Resetting db.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                     cur.execute(self.unmark_sql)
                     conn.commit()
                 else:
                     cur.executemany(self.mark_sql, [(str(item[0]),) for item in self.queue])
                     conn.commit()
                 conn.close()
-                print("[{0:%Y-%m-%d %H:%M:%S}] Refilled queue with {1} entries.".format(datetime.now(),len(self.queue)), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Refilled queue with {2} entries.".format(datetime.now(),self.config._name,len(self.queue)), file=self.log_file, flush=True)
             id,url,src,tags = self.queue.pop()
             if any(tag in tags.split(" ") for tag in self.blacklist_tags):
                 self.blacklist(id)
                 continue
             if any(tag in tags.split(" ") for tag in self.skip_tags):
                 if random.randint(1,100) <= self.skip_chance:
-                    print("[{0:%Y-%m-%d %H:%M:%S}] Skipped {1}.".format(datetime.now(),id), file=self.log_file, flush=True)
+                    print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Skipped {2}.".format(datetime.now(),self.config._name,id), file=self.log_file, flush=True)
                     continue
             try:
                 url = urllib.request.urlretrieve(url)[0]
@@ -282,10 +282,10 @@ class danboorubot(ananas.PineappleBot):
                 status_text = 'http://danbooru.donmai.us/posts/{0}\r\nsource: {1}'.format(id,src)
                 self.mastodon.status_post(status_text, in_reply_to_id=None, media_ids=(mediadict['id'],), sensitive=True, visibility="unlisted", spoiler_text=None)
             except Exception as e:
-                print("[{0:%Y-%m-%d %H:%M:%S}] Post http://danbooru.donmai.us/posts/{1} threw exception: {2}".format(datetime.now(),id,e), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Post http://danbooru.donmai.us/posts/{2} threw exception: {3}".format(datetime.now(),self.config._name,id,e), file=self.log_file, flush=True)
                 continue
             else:
-                print("[{0:%Y-%m-%d %H:%M:%S}] Posted.".format(datetime.now()), file=self.log_file, flush=True)
+                print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Posted.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                 break
 
     @ananas.schedule(hour="*/6", minute=10)
@@ -325,8 +325,8 @@ class admin_cleaner(ananas.PineappleBot):
             for post in posts:
                 if "delete this!" in post['content']:
                     self.mastodon.status_delete(post['id'])
-                    print("[{0:%Y-%m-%d %H:%M:%S}] Found deleter post id {1}.".format(datetime.now(),post['id']), file=self.log_file, flush=True)
+                    print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Found deleter post id {2}.".format(datetime.now(),self.config._name,post['id']), file=self.log_file, flush=True)
                 if "announce! " in post['content']:
                     self.mastodon.status_delete(post['id'])
-                    print("[{0:%Y-%m-%d %H:%M:%S}] Found announcer post id {1}.".format(datetime.now(),post['id']), file=self.log_file, flush=True)
+                    print("[{0:%Y-%m-%d %H:%M:%S}] {1}.debug: Found announcer post id {2}.".format(datetime.now(),self.config._name,post['id']), file=self.log_file, flush=True)
             self.last_checked_post = posts[0]

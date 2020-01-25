@@ -16,7 +16,7 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 `tags`: [REQUIRED] comma-separated booru tags to use for search in the api ex. `"gun,handgun,rifle,shotgun,tactical_clothes"`
 
-`blacklist_tags`: (default = `"spoilers,guro,bdsm,bondage,foot_worship,comic,naked_sheet,foot_licking,nude,nude_cover,randoseru,kindergarten_uniform,male_focus,1boy,2boys,3boys,4boys,5boys,6+boys,multiple_boys,horror,parody,no_humans,manly,banned_artist,swastika,nazi,ss_insignia,everyone,loli"`) (adds to default, not replaces) comma-separated booru tags to be blacklisted ex. `"mecha_musume,xenosaga,kantai_collection"`
+`blacklist_tags`: (default = `"spoilers,guro,bdsm,bondage,foot_worship,comic,naked_sheet,foot_licking,nude,nude_cover,randoseru,kindergarten_uniform,male_focus,1boy,2boys,3boys,4boys,5boys,6+boys,multiple_boys,horror,parody,no_humans,manly,banned_artist,swastika,nazi,ss_insignia,everyone,giantess"`) (adds to default, not replaces) comma-separated booru tags to be blacklisted ex. `"mecha_musume,xenosaga,kantai_collection"`
 
 `mandatory_tags`: (default = `"1girl,2girls,3girls,4girls,5girls,6+girls,multiple_girls"`) (adds to default, not replaces) comma-separated booru tags. Any of them must appear in the post to be posted ex. `"1girl"`
 
@@ -34,8 +34,8 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 `offset`: (default = 0) offset posting time by this many minutes (eg. with a value of 2, instead of posting at 0 and 30 minutes past, post at 2 and 32 minutes past)
 
-`log_file`: file to save logs in. If not given, will print to stdout
+`log_file`: file to save logs in. If not present, will print to stdout
 
 ### Reminder bot
 
-`log_file`: file to save logs in. If not given, will print to stdout
+`log_file`: file to save logs in. If not present, will print to stdout

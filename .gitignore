@@ -3,4 +3,5 @@
 *.log.2
 *.cfg
 *.db
+*.kate-swp
 __pycache__/*
