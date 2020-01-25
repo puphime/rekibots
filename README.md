@@ -4,17 +4,19 @@ Mastodon bots based on Ananas (https://github.com/chr-1x/ananas)
 Prerequisites: python 3, ananas with prereqs (from pypi), pybooru with prereqs (from pypi), sqlite 3
 
 ## Setup
-Clone, make sure rekibot.py is on your PYTHONPATH, setup a configuration file according to the instructions for Ananas and launch with ananas config.cfg -i. Proceed with the instructions. Next time run without the -i.
+Clone, make sure rekibot.py is on your PYTHONPATH, setup a configuration file according to the instructions for Ananas and below and launch with ananas config.cfg -i. Proceed with the instructions. Next time run without the -i.
 
 ## Config entries
 
 `class`: `rekibot.danboorubot` for image bot, or `rekibot.reminder` for alt text reminder bot
 
+Apart from the default entires as covered in the readme for ananas, there are also custom entries:
+
 ### Danbooru bot
 
 `tags`: [REQUIRED] comma-separated booru tags to use for search in the api ex. `"gun,handgun,rifle,shotgun,tactical_clothes"`
 
-`blacklist_tags`: (default = `"female_pervert,groping,breast_grab,pervert,sexual_harassment,sexually_suggestive,underwear_only,breast_press,topless,dangerous_beast,bottomless,no_panties,spoilers,revealing_clothes,pet_play,eargasm,daijoubu?_oppai_momu?,guro,bdsm,bondage,foot_worship,comic,cameltoe,osomatsu-san,osomatsu-kun,naked_sheet,foot_licking,nude,nude_cover,bunnysuit,randoseru,age_difference,younger,child,incest,you_gonna_get_raped,sisters,kindergarten_uniform,male_focus,1boy,multiple_boys,violence,horror,parody,no_humans,calne_ca,predator,goron,ichigo_mashimaro,manly,upskirt,banned_artist,santa_costume,injury,damaged,swastika,nazi,ss_insignia,everyone"`) (adds to default, not replaces) comma-separated booru tags to be blacklisted ex. `"mecha_musume,xenosaga,kantai_collection"`
+`blacklist_tags`: (default = `"spoilers,guro,bdsm,bondage,foot_worship,comic,naked_sheet,foot_licking,nude,nude_cover,randoseru,kindergarten_uniform,male_focus,1boy,2boys,3boys,4boys,5boys,6+boys,multiple_boys,horror,parody,no_humans,manly,banned_artist,swastika,nazi,ss_insignia,everyone,loli"`) (adds to default, not replaces) comma-separated booru tags to be blacklisted ex. `"mecha_musume,xenosaga,kantai_collection"`
 
 `mandatory_tags`: (default = `"1girl,2girls,3girls,4girls,5girls,6+girls,multiple_girls"`) (adds to default, not replaces) comma-separated booru tags. Any of them must appear in the post to be posted ex. `"1girl"`
 
@@ -32,6 +34,8 @@ Clone, make sure rekibot.py is on your PYTHONPATH, setup a configuration file ac
 
 `offset`: (default = 0) offset posting time by this many minutes (eg. with a value of 2, instead of posting at 0 and 30 minutes past, post at 2 and 32 minutes past)
 
+`log_file`: file to save logs in. If not given, will print to stdout
+
 ### Reminder bot
 
-No custom entries
+`log_file`: file to save logs in. If not given, will print to stdout

@@ -6,51 +6,58 @@ from pybooru import Danbooru
 import magic
 import time
 import re
+import sys
 from datetime import datetime
 from html.parser import HTMLParser
 
 class reminder(ananas.PineappleBot):
     def start(self):
-        self.log_file = open("%s.log" % self.config._name, "a")
+        if "log_file" in self.config:
+            self.log_file = open(self.config.log_file, "a")
+        else:
+            self.log_file = sys.stdout
         self.me = self.mastodon.account_verify_credentials()
         self.last_checked_post = self.mastodon.timeline_home()[0]
         self.h = HTMLParser()
     
     @ananas.schedule(minute="*", second=30)
     def check_follows(self):
-        self.me = self.mastodon.account_verify_credentials()
-        my_id = self.me['id']
-        followers_count = self.me['followers_count']
-        followers = self.mastodon.account_followers(my_id,limit=80)
-        if len(followers)<followers_count:
-            followers = self.mastodon.fetch_remaining(followers)
-        following_count = self.me['following_count']
-        following = self.mastodon.account_following(my_id,limit=80)
-        if len(following)<following_count:
-            following = self.mastodon.fetch_remaining(following)
-        followingids=[]
-        for followed in following:
-            followingids=followingids+[followed['id'],]
-        followerids=[]
-        for follower in followers:
-            followerids=followerids+[follower['id'],]
-        for follower in followerids:
-            if follower not in followingids:
-                time.sleep(1)
-                if not self.mastodon.account_relationships(follower)[0]['requested']:
-                    if "moved" in self.mastodon.account(follower):
-                        self.mastodon.account_block(follower)
-                        self.mastodon.account_unblock(follower)
-                        print("[{0:%Y-%m-%d %H:%M:%S}] Softblocked user {1}.".format(datetime.now(),str(follower)), file=self.log_file, flush=True)
-                    else:
-                        ret=self.mastodon.account_follow(follower,reblogs=False)
-                        print("[{0:%Y-%m-%d %H:%M:%S}] Attempted to follow user {1}.".format(datetime.now(),str(follower)), file=self.log_file, flush=True)
-        for followed in followingids:
-            if followed not in followerids:
-                time.sleep(1)
-                if not self.mastodon.account_relationships(followed)[0]['requested']:
-                    self.mastodon.account_unfollow(followed) 
-                    print("[{0:%Y-%m-%d %H:%M:%S}] Unfollowed user {1}.".format(datetime.now(),str(followed)), file=self.log_file, flush=True)
+        try:
+            self.me = self.mastodon.account_verify_credentials()
+            my_id = self.me['id']
+            followers_count = self.me['followers_count']
+            followers = self.mastodon.account_followers(my_id,limit=80)
+            if len(followers)<followers_count:
+                followers = self.mastodon.fetch_remaining(followers)
+            following_count = self.me['following_count']
+            following = self.mastodon.account_following(my_id,limit=80)
+            if len(following)<following_count:
+                following = self.mastodon.fetch_remaining(following)
+            followingids=[]
+            for followed in following:
+                followingids=followingids+[followed['id'],]
+            followerids=[]
+            for follower in followers:
+                followerids=followerids+[follower['id'],]
+            for follower in followerids:
+                if follower not in followingids:
+                    time.sleep(1)
+                    if not self.mastodon.account_relationships(follower)[0]['requested']:
+                        if "moved" in self.mastodon.account(follower):
+                            self.mastodon.account_block(follower)
+                            self.mastodon.account_unblock(follower)
+                            print("[{0:%Y-%m-%d %H:%M:%S}] Softblocked user {1}.".format(datetime.now(),str(follower)), file=self.log_file, flush=True)
+                        else:
+                            ret=self.mastodon.account_follow(follower,reblogs=False)
+                            print("[{0:%Y-%m-%d %H:%M:%S}] Attempted to follow user {1}.".format(datetime.now(),str(follower)), file=self.log_file, flush=True)
+            for followed in followingids:
+                if followed not in followerids:
+                    time.sleep(1)
+                    if not self.mastodon.account_relationships(followed)[0]['requested']:
+                        self.mastodon.account_unfollow(followed) 
+                        print("[{0:%Y-%m-%d %H:%M:%S}] Unfollowed user {1}.".format(datetime.now(),str(followed)), file=self.log_file, flush=True)
+        except Exception as e:
+            print("[{0:%Y-%m-%d %H:%M:%S}] {1}".format(datetime.now(),e), file=self.log_file, flush=True)
    
     @ananas.schedule(minute="*", second=0)
     def check_posts(self):
@@ -78,55 +85,11 @@ class reminder(ananas.PineappleBot):
                 self.mastodon.status_post(text.split('announce! ')[-1], in_reply_to_id=None, media_ids=None, sensitive=False, visibility="unlisted", spoiler_text=None)
       
 class danboorubot(ananas.PineappleBot):
-    def check_booru(self):
-        conn = sqlite3.connect("%s.db" % self.config._name)
-        cur = conn.cursor()
-        for t in self.tags:
-            print("[{0:%Y-%m-%d %H:%M:%S}] Pulling from tag {1}.".format(datetime.now(),t), file=self.log_file, flush=True)
-            badpages=0
-            for page in range(1,self.max_page+1):
-                while True:
-                    try:
-                        posts = self.client.post_list(tags=t, page=str(page), limit=200)
-                    except:
-                        continue
-                    else:
-                        break
-                if len(posts) == 0:
-                    print("[{0:%Y-%m-%d %H:%M:%S}] No more posts. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
-                    break
-                counter=0
-                for post in posts:
-                    if (('drawfag' not in post['source'] and '.png' not in post['source'] and '.jpg' not in post['source'] and '.gif' not in post['source'] and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and not any(tag in post['tag_string'].split(" ") for tag in self.blacklist_tags) and any(tag in post['tag_string'].split(" ") for tag in self.mandatory_tags):
-                        if post['pixiv_id'] is not None:
-                            source_url = 'https://www.pixiv.net/artworks/%s' % post['pixiv_id']
-                        else:
-                            source_url = post['source']
-                        if 'file_url' in post:
-                            danbooru_url = post['file_url']
-                        elif 'large_file_url' in post:
-                            danbooru_url = post['large_file_url']
-                        else:
-                            continue
-                        try:
-                            cur.execute(self.insert_sql, (int(post['id']),danbooru_url,source_url,post['tag_string']))
-                        except:
-                            continue
-                        else:
-                            counter=counter+1
-                print("[{0:%Y-%m-%d %H:%M:%S}] Page {1} - inserted {2} entries.".format(datetime.now(),page,counter), file=self.log_file, flush=True)
-                if counter == 0:
-                    badpages = badpages+1
-                    if badpages == self.max_badpages:
-                        print("[{0:%Y-%m-%d %H:%M:%S}] No new posts on {1} pages in a row. Break processing.".format(datetime.now(),badpages), file=self.log_file, flush=True)
-                        break
-                else:
-                    badpages = 0
-        conn.commit()
-        conn.close()
-        
     def start(self):
-        self.log_file = open("%s.log" % self.config._name, "a")
+        if "log_file" in self.config:
+            self.log_file = open(self.config.log_file, "a")
+        else:
+            self.log_file = sys.stdout
         self.mime = magic.Magic(mime=True)
         self.proxy = urllib.request.ProxyHandler({})
         self.opener = urllib.request.build_opener(self.proxy)
@@ -139,15 +102,11 @@ class danboorubot(ananas.PineappleBot):
         
         self.tags = self.config.tags.split(',')
         
-        self.blacklist_tags = ['female_pervert','groping','breast_grab','pervert','sexual_harassment','sexually_suggestive','underwear_only',
-                               'breast_press','topless','dangerous_beast','bottomless','no_panties','spoilers','revealing_clothes','pet_play',
-                               'eargasm','daijoubu?_oppai_momu?','guro','bdsm','bondage','foot_worship','comic','cameltoe','osomatsu-san',
-                               'osomatsu-kun','naked_sheet','foot_licking','nude','nude_cover','bunnysuit','randoseru','age_difference',
-                               'younger','child','incest','you_gonna_get_raped','sisters','kindergarten_uniform','male_focus','1boy',
-                               'multiple_boys','violence','horror','parody','no_humans','calne_ca','predator','goron','ichigo_mashimaro',
-                               'manly','upskirt','banned_artist','santa_costume','injury','damaged','swastika','nazi','ss_insignia','everyone']
+        self.blacklist_tags = ['spoilers','guro','bdsm','bondage','foot_worship','comic','naked_sheet','foot_licking','nude','nude_cover','randoseru','kindergarten_uniform',
+                               'male_focus','1boy','2boys','3boys','4boys','5boys','6+boys','multiple_boys','horror','parody','no_humans','manly','banned_artist',
+                               'swastika','nazi','ss_insignia','everyone','loli']
         self.mandatory_tags = ['1girl','2girls','3girls','4girls','5girls','6+girls','multiple_girls']
-        self.skip_tags = ['touhou','mahou_shoujo_madoka_magica']
+        self.skip_tags = ['touhou','mahou_shoujo_madoka_magica','santa_costume']
         
         self.skip_chance = 75
         self.max_page = 300
@@ -214,7 +173,6 @@ class danboorubot(ananas.PineappleBot):
         if 'migratedb' in self.config and self.config.migratedb == "yes":
             conn = sqlite3.connect("%s.db" % self.config._name)
             cur = conn.cursor()
-            
             try:
                 print("[{0:%Y-%m-%d %H:%M:%S}] UPDATE images SET blacklisted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE blacklisted=1);".format(datetime.now()), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql2)
@@ -233,6 +191,53 @@ class danboorubot(ananas.PineappleBot):
             print("[{0:%Y-%m-%d %H:%M:%S}] Database rebuild with migration completed OK.".format(datetime.now()), file=self.log_file, flush=True)
             self.config.migratedb="no"
             
+    def check_booru(self):
+        conn = sqlite3.connect("%s.db" % self.config._name)
+        cur = conn.cursor()
+        for t in self.tags:
+            print("[{0:%Y-%m-%d %H:%M:%S}] Pulling from tag {1}.".format(datetime.now(),t), file=self.log_file, flush=True)
+            badpages=0
+            for page in range(1,self.max_page+1):
+                while True:
+                    try:
+                        posts = self.client.post_list(tags=t, page=str(page), limit=200)
+                    except:
+                        continue
+                    else:
+                        break
+                if len(posts) == 0:
+                    print("[{0:%Y-%m-%d %H:%M:%S}] No more posts. Break processing.".format(datetime.now()), file=self.log_file, flush=True)
+                    break
+                counter=0
+                for post in posts:
+                    if (('drawfag' not in post['source'] and '.png' not in post['source'] and '.jpg' not in post['source'] and '.gif' not in post['source'] and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and not any(tag in post['tag_string'].split(" ") for tag in self.blacklist_tags) and any(tag in post['tag_string'].split(" ") for tag in self.mandatory_tags):
+                        if post['pixiv_id'] is not None:
+                            source_url = 'https://www.pixiv.net/artworks/%s' % post['pixiv_id']
+                        else:
+                            source_url = post['source']
+                        if 'file_url' in post:
+                            danbooru_url = post['file_url']
+                        elif 'large_file_url' in post:
+                            danbooru_url = post['large_file_url']
+                        else:
+                            continue
+                        try:
+                            cur.execute(self.insert_sql, (int(post['id']),danbooru_url,source_url,post['tag_string']))
+                        except:
+                            continue
+                        else:
+                            counter=counter+1
+                print("[{0:%Y-%m-%d %H:%M:%S}] Page {1} - inserted {2} entries.".format(datetime.now(),page,counter), file=self.log_file, flush=True)
+                if counter == 0:
+                    badpages = badpages+1
+                    if badpages == self.max_badpages:
+                        print("[{0:%Y-%m-%d %H:%M:%S}] No new posts on {1} pages in a row. Break processing.".format(datetime.now(),badpages), file=self.log_file, flush=True)
+                        break
+                else:
+                    badpages = 0
+        conn.commit()
+        conn.close()
+        
     def blacklist(self,id):
         conn = sqlite3.connect("%s.db" % self.config._name)
         cur = conn.cursor()
@@ -306,10 +311,13 @@ class danboorubot(ananas.PineappleBot):
 
 class admin_cleaner(ananas.PineappleBot):
     def start(self):
-        self.log_file = open("%s.log" % self.config._name, "a")
+        if "log_file" in self.config:
+            self.log_file = open(self.config.log_file, "a")
+        else:
+            self.log_file = sys.stdout
         self.me = self.mastodon.account_verify_credentials()
-        self.last_checked_post = "103533885806295003"
-    
+        self.last_checked_post = self.mastodon.timeline_home()[0]
+
     @ananas.schedule(minute=0)
     def check_posts(self):
         posts = self.mastodon.account_statuses(self.me['id'],since_id=self.last_checked_post)
