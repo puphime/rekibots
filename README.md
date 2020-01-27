@@ -40,6 +40,8 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 `log_file`: file to save logs in. If not present, will print to stdout.
 
+`db_file`: sqlite database file. If not present, will default to `[bot name].db` in the working dir.
+
 ### Reminder bot
 
 `log_file`: file to save logs in. If not present, will print to stdout.

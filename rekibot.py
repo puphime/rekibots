@@ -86,10 +86,6 @@ class reminder(ananas.PineappleBot):
       
 class danboorubot(ananas.PineappleBot):
     def start(self):
-        if "log_file" in self.config and len(self.config.log_file)>0:
-            self.log_file = open(self.config.log_file, "a")
-        else:
-            self.log_file = sys.stdout
         self.mime = magic.Magic(mime=True)
         self.proxy = urllib.request.ProxyHandler({})
         self.opener = urllib.request.build_opener(self.proxy)
@@ -106,6 +102,8 @@ class danboorubot(ananas.PineappleBot):
         self.mandatory_tags = []
         self.skip_tags = []
         
+        self.log_file = sys.stdout    
+        self.db_file = "{0}.db".format(self.config._name)
         self.mandatory_tag_mode = 'any'
         self.skip_chance = 75
         self.max_page = 300
@@ -115,6 +113,10 @@ class danboorubot(ananas.PineappleBot):
         self.offset = 0
         
         #can probably replace this with a loop later?
+        if "log_file" in self.config and len(self.config.log_file)>0:
+            self.log_file = open(self.config.log_file, "a")
+        if 'db_file' in self.config and len(self.config.db_file)>0:
+            self.db_file = self.config.db_file
         if 'blacklist_tags' in self.config and len(self.config.blacklist_tags)>0:
             self.blacklist_tags = self.config.blacklist_tags.split(',')
         if 'mandatory_tags' in self.config and len(self.config.mandatory_tags)>0:
@@ -138,7 +140,7 @@ class danboorubot(ananas.PineappleBot):
         
         self.create_table_sql = "create table if not exists images (danbooru_id integer primary key,url_danbooru text,url_source text,tags text,posted integer default 0,blacklisted integer default 0,UNIQUE(url_danbooru),UNIQUE(url_source));"
         self.insert_sql = "insert into images(danbooru_id,url_danbooru,url_source,tags) values(?,?,?,?);"
-        self.select_sql = "select danbooru_id,url_danbooru,url_source,tags from images where blacklisted=0 and posted=0;"
+        self.select_sql = "select danbooru_id,url_danbooru,url_source,tags from images where blacklisted=0 and posted=0 order by random() limit ?;"
         self.blacklist_sql = "update images set blacklisted=1 where danbooru_id=?;"
         self.unmark_sql = "update images set posted=0;"
         self.mark_sql = "update images set posted=1 where danbooru_id=?;"
@@ -147,7 +149,7 @@ class danboorubot(ananas.PineappleBot):
         self.migrate_db_sql3 = "update images set posted=1 where danbooru_id in (select danbooru_id from images_old where posted=1);"
         self.migrate_db_sql4 = "drop table images_old;"
         
-        conn = sqlite3.connect("{0}.db".format(self.config._name))
+        conn = sqlite3.connect(self.config.db_file)
         cur = conn.cursor()
         
         if 'migratedb' in self.config and self.config.migratedb == "yes":
@@ -164,16 +166,16 @@ class danboorubot(ananas.PineappleBot):
         conn.commit()
         conn.close()
         
-        conn = sqlite3.connect("{0}.db".format(self.config._name))
+        conn = sqlite3.connect(self.config.db_file)
         cur = conn.cursor()
         
-        cur.execute(self.select_sql)
+        cur.execute(self.select_sql, (self.queue_length,))
         if len(cur.fetchall())==0:
             self.check_booru()
         conn.close()
         
         if 'migratedb' in self.config and self.config.migratedb == "yes":
-            conn = sqlite3.connect("{0}.db".format(self.config._name))
+            conn = sqlite3.connect(self.config.db_file)
             cur = conn.cursor()
             try:
                 print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: UPDATE images SET blacklisted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE blacklisted=1);".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
@@ -194,7 +196,7 @@ class danboorubot(ananas.PineappleBot):
             self.config.migratedb="no"
             
     def check_booru(self):
-        conn = sqlite3.connect("{0}.db".format(self.config._name))
+        conn = sqlite3.connect(self.config.db_file)
         cur = conn.cursor()
         for t in self.tags:
             print("[{0:%Y-%m-%d %H:%M:%S}] {1}.check_booru: Pulling from tag '{2}'.".format(datetime.now(),self.config._name,t), file=self.log_file, flush=True)
@@ -241,7 +243,7 @@ class danboorubot(ananas.PineappleBot):
         conn.close()
         
     def blacklist(self,id):
-        conn = sqlite3.connect("{0}.db".format(self.config._name))
+        conn = sqlite3.connect(self.config.db_file)
         cur = conn.cursor()
         cur.execute(self.blacklist_sql, (id,))
         conn.commit()
@@ -254,12 +256,10 @@ class danboorubot(ananas.PineappleBot):
             return
         while True:
             while len(self.queue) == 0:
-                conn = sqlite3.connect("{0}.db".format(self.config._name))
+                conn = sqlite3.connect(self.config.db_file)
                 cur = conn.cursor()
-                cur.execute(self.select_sql)
+                cur.execute(self.select_sql, (self.queue_length,))
                 self.queue = cur.fetchall()
-                random.shuffle(self.queue)
-                self.queue = self.queue[:self.queue_length]
                 if len(self.queue) == 0:
                     print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: No valid entries. Resetting db.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                     cur.execute(self.unmark_sql)
