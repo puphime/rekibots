@@ -290,8 +290,6 @@ class danboorubot(ananas.PineappleBot):
                 url = urllib.request.urlretrieve(url)[0]
                 with open(url,'rb') as file:
                     mediadict = self.mastodon.media_post(file.read(),self.mime.from_file(url))
-                if os.path.isfile(url):
-                    os.remove(url)
                 status_text = 'http://danbooru.donmai.us/posts/{0}\r\nsource: {1}'.format(id,src)
                 self.mastodon.status_post(status_text, in_reply_to_id=None, media_ids=(mediadict['id'],), sensitive=True, visibility="unlisted", spoiler_text=None)
             except Exception as e:
@@ -300,6 +298,9 @@ class danboorubot(ananas.PineappleBot):
             else:
                 print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Posted.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                 break
+            finally:
+                if os.path.isfile(url):
+                    os.remove(url)
 
     @ananas.schedule(hour="*/6", minute=10)
     def update_db(self):
