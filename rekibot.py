@@ -9,13 +9,14 @@ import re
 import sys
 from datetime import datetime
 from html.parser import HTMLParser
+import os
 
 class reminder(ananas.PineappleBot):
-    def init(self)
-        self.log_file = sys.stdout
+    def init(self):
         self.admin = "pup_hime@slime.global"
         
     def start(self):
+        self.log_file = sys.stdout
         if "log_file" in self.config and len(self.config.log_file)>0:
             self.log_file = open(self.config.log_file, "a")
         if "admin" in self.config and len(self.config.admin)>0:
@@ -104,7 +105,7 @@ class danboorubot(ananas.PineappleBot):
         self.mandatory_tags = []
         self.skip_tags = []
         
-        self.log_file = sys.stdout
+        
         self.mandatory_tag_mode = 'any'
         self.skip_chance = 75
         self.max_page = 300
@@ -129,6 +130,7 @@ class danboorubot(ananas.PineappleBot):
     def start(self):
         self.tags = self.config.tags.split(',')
         self.db_file = "{0}.db".format(self.config._name)
+        self.log_file = sys.stdout
         if "admin" in self.config and len(self.config.admin)>0:
             self.admin=self.config.admin
         if "log_file" in self.config and len(self.config.log_file)>0:
@@ -288,6 +290,8 @@ class danboorubot(ananas.PineappleBot):
                 url = urllib.request.urlretrieve(url)[0]
                 with open(url,'rb') as file:
                     mediadict = self.mastodon.media_post(file.read(),self.mime.from_file(url))
+                if os.path.isfile(url):
+                    os.remove(url)
                 status_text = 'http://danbooru.donmai.us/posts/{0}\r\nsource: {1}'.format(id,src)
                 self.mastodon.status_post(status_text, in_reply_to_id=None, media_ids=(mediadict['id'],), sensitive=True, visibility="unlisted", spoiler_text=None)
             except Exception as e:
