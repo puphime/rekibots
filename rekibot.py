@@ -116,7 +116,6 @@ class danboorubot(ananas.PineappleBot):
         self.opener = urllib.request.build_opener(self.proxy)
         self.opener.addheaders = [('User-Agent','Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
         urllib.request.install_opener(self.opener)
-        self.client = Danbooru(site_url='https://safebooru.donmai.us')
         self.h = HTMLParser()
         
         self.admin = "pup_hime@slime.global"
@@ -138,6 +137,8 @@ class danboorubot(ananas.PineappleBot):
         self.tags = []
         self.db_file = ""
         
+        self.booru_url = 'https://danbooru.donmai.us'
+        
         self.create_table_sql = "create table if not exists images (danbooru_id integer primary key,url_danbooru text,url_source text,tags text,posted integer default 0,blacklisted integer default 0,UNIQUE(url_danbooru),UNIQUE(url_source));"
         self.insert_sql = "insert into images(danbooru_id,url_danbooru,url_source,tags) values(?,?,?,?);"
         self.select_sql = "select danbooru_id,url_danbooru,url_source,tags from images where blacklisted=0 and posted=0 order by random() limit ?;"
@@ -150,6 +151,7 @@ class danboorubot(ananas.PineappleBot):
         self.migrate_db_sql4 = "drop table images_old;"
         
     def start(self):
+        
         self.tags = self.config.tags.split(',')
         self.db_file = "{0}.db".format(self.config._name)
         self.log_file = sys.stderr
@@ -163,6 +165,8 @@ class danboorubot(ananas.PineappleBot):
                 self.verbose = True
         if "admin" in self.config and len(self.config.admin)>0:
             self.admin=self.config.admin
+        if "booru_url" in self.config and len(self.config.booru_url)>0:
+            self.booru_url=self.config.booru_url
         if 'db_file' in self.config and len(self.config.db_file)>0:
             self.db_file = self.config.db_file
         if 'blacklist_tags' in self.config and len(self.config.blacklist_tags)>0:
@@ -185,6 +189,8 @@ class danboorubot(ananas.PineappleBot):
             self.post_every = int(self.config.post_every)
         if 'offset' in self.config and self.config.offset.isdigit():
             self.offset = int(self.config.offset)
+        
+        self.client = Danbooru(site_url=self.booru_url)
         
         conn = sqlite3.connect(self.db_file)
         cur = conn.cursor()

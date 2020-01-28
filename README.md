@@ -2,10 +2,11 @@
 Mastodon bots based on Ananas (https://github.com/chr-1x/ananas)
 
 Prerequisites: python 3, ananas with prereqs (from pypi), pybooru with prereqs (from pypi), sqlite 3
+
 ## General information
 
 ### Image bot
-Posts images from safebooru (or other - to be implemented) on a schedule based on tags with tag filters.
+Builds a local database and posts images from any Danbooru compatible image board on a schedule, based on tag searches, with tag filters.
 
 ### Alt text reminder bot
 Reminds followers gently that they forgot to add alt text to their media.
@@ -26,21 +27,23 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 ### Danbooru bot
 
-`tags`: [REQUIRED] comma-separated booru tags to use for search in the api ex. `"gun,handgun,rifle,shotgun,tactical_clothes"`
+`tags`: [REQUIRED] comma-separated tags to use for search in the api, ex. `"gun,handgun,rifle,shotgun,tactical_clothes"`
 
-`blacklist_tags`: (default = "") comma-separated booru tags to be blacklisted.
+`blacklist_tags`: (default = "") comma-separated tags to be blacklisted.
 
-`mandatory_tags`: (default = "") comma-separated booru tags. Any of them must appear in the post to be posted.
+`mandatory_tags`: (default = "") comma-separated tags. Any of them must appear in the post to be posted.
 
-`skip_tags`: (default = "") comma-separated booru tags to have a chance to skip over when posting (eg. if a tag is overrepresented in the database, or you just don't like it).
+`skip_tags`: (default = "") comma-separated tags that enable a post to be skipped based on `skip_chance`.
 
-`mandatory_tag_mode`: (default = any) require any or all mandatory tags (only accepts any|all)
+`mandatory_tag_mode`: (default = any) (available values = `any, all`) require any or all mandatory tags.
 
 `skip_chance`: (default = 75) percentage chance of skipping over a post containing a tag listed in `skip_tags`.
 
-`max_page`: (default = 300) how many pages to check on booru before stopping processing.
+`booru_url`: (default = "https://danbooru.donmai.us") The URL for the booru the bot should pull images from.
 
-`max_badpages`: (default = 10) how many pages with no new images to tolerate before stopping processing.
+`max_page`: (default = 300) how many 200-item pages to check on booru before stopping processing.
+
+`max_badpages`: (default = 10) how many 200-item pages with no new images to tolerate before stopping processing.
 
 `queue_length`: (default = 5) how many posts to draw from the db into memory at a time.
 
@@ -48,20 +51,20 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 `offset`: (default = 0) offset posting time by this many minutes (eg. with a value of 2, instead of posting at 0 and 30 minutes past, post at 2 and 32 minutes past).
 
-`db_file`: sqlite database file. If not present, will default to `[bot name].db` in the working dir.
+`db_file`: sqlite database file. If not present, will default to `[bot name].db` in the working directory.
 
-`log_file`: file to save logs in. If not present, will print to stderr. (This only works for the actual bot output and not ananas' native output unless you can toggle log_to_stderr which seems to be unimplemented)
+`log_file`: file to save logs in. If not present, will print to stderr.
 
-`verbose_logging`: (default = no) increase the amount of information produced by rekibots (available values = `yes, no, very`)
+`verbose_logging`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
 
 ### Reminder bot
 
 `log_file`: file to save logs in. If not present, will print to stderr.
 
-`verbose_logging`: (default = no) increase the amount of information produced by rekibots (available values = `yes, no, very`)
+`verbose_logging`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
 
 ### Admin cleaner bot
 
 `log_file`: file to save logs in. If not present, will print to stderr.
 
-`verbose_logging`: (default = no) increase the amount of information produced by rekibots (available values = `yes, no, very`)
+`verbose_logging`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
