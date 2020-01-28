@@ -303,19 +303,22 @@ class danboorubot(ananas.PineappleBot):
             return
         while True:
             while len(self.queue) == 0:
-                conn = sqlite3.connect(self.db_file)
-                cur = conn.cursor()
-                cur.execute(self.select_sql, (self.queue_length,))
-                self.queue = cur.fetchall()
-                if len(self.queue) == 0:
-                    print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: No valid entries. Resetting db.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
-                    cur.execute(self.unmark_sql)
-                    conn.commit()
-                else:
-                    cur.executemany(self.mark_sql, [(str(item[0]),) for item in self.queue])
-                    conn.commit()
-                conn.close()
-                if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Refilled queue with {2} entries.".format(datetime.now(),self.config._name,len(self.queue)), file=self.log_file, flush=True)
+                try:
+                    conn = sqlite3.connect(self.db_file)
+                    cur = conn.cursor()
+                    cur.execute(self.select_sql, (self.queue_length,))
+                    self.queue = cur.fetchall()
+                    if len(self.queue) == 0:
+                        print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: No valid entries. Resetting db.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
+                        cur.execute(self.unmark_sql)
+                        conn.commit()
+                    else:
+                        cur.executemany(self.mark_sql, [(str(item[0]),) for item in self.queue])
+                        conn.commit()
+                    conn.close()
+                    if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Refilled queue with {2} entries.".format(datetime.now(),self.config._name,len(self.queue)), file=self.log_file, flush=True)
+                except:
+                    continue
             id,url,src,tags = self.queue.pop()
             #check for blacklisted tags before posting
             if len(self.blacklist_tags)>0 and any(tag in tags.split(" ") for tag in self.blacklist_tags):
