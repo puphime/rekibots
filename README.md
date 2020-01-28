@@ -2,6 +2,16 @@
 Mastodon bots based on Ananas (https://github.com/chr-1x/ananas)
 
 Prerequisites: python 3, ananas with prereqs (from pypi), pybooru with prereqs (from pypi), sqlite 3
+## General information
+
+### Image bot
+Posts images from safebooru (or other - to be implemented) on a schedule based on tags with tag filters.
+
+### Alt text reminder bot
+Reminds followers gently that they forgot to add alt text to their media.
+
+### Admin cleaner bot
+Automatically deletes admin commands from the admin account every full hour. (requires log in as admin account)
 
 ## Setup
 Clone, make sure rekibot.py is on your PYTHONPATH, setup a configuration file according to the instructions for Ananas and below and launch with ananas config.cfg -i. Proceed with the instructions. Next time run without the -i.
@@ -10,7 +20,7 @@ For an example config see https://github.com/puphime/rekibots/blob/master/debug.
 
 ## Config entries
 
-`class`: `rekibot.danboorubot` for image bot, or `rekibot.reminder` for alt text reminder bot
+`class`: `rekibot.danboorubot` for image bot, `rekibot.reminder` for alt text reminder bot, or `rekibot.admin_cleaner` for admin cleaner bot
 
 Apart from the default entires as covered in the readme for ananas, there are also custom entries:
 
@@ -38,10 +48,20 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 `offset`: (default = 0) offset posting time by this many minutes (eg. with a value of 2, instead of posting at 0 and 30 minutes past, post at 2 and 32 minutes past).
 
-`log_file`: file to save logs in. If not present, will print to stdout.
+`log_file`: file to save logs in. If not present, will print to stderr. (This only works for the actual bot output and not ananas' native output unless you can toggle log_to_stderr which seems to be unimplemented)
 
 `db_file`: sqlite database file. If not present, will default to `[bot name].db` in the working dir.
 
+`verbose_logging`: (default = no) increase the amount of information produced by rekibots
+
 ### Reminder bot
 
-`log_file`: file to save logs in. If not present, will print to stdout.
+`log_file`: file to save logs in. If not present, will print to stderr. (This only works for the actual bot output and not ananas' native output unless you can toggle log_to_stderr which seems to be unimplemented)
+
+`verbose_logging`: (default = no) increase the amount of information produced by rekibots
+
+### Admin cleaner bot
+
+`log_file`: file to save logs in. If not present, will print to stderr. (This only works for the actual bot output and not ananas' native output unless you can toggle log_to_stderr which seems to be unimplemented)
+
+`verbose_logging`: (default = no) increase the amount of information produced by rekibots

@@ -17,7 +17,7 @@ class reminder(ananas.PineappleBot):
         self.verbose_logging = False
         
     def start(self):
-        self.log_file = sys.stdout
+        self.log_file = sys.stderr
         if "log_file" in self.config and len(self.config.log_file)>0:
             self.log_file = open(self.config.log_file, "a")
         if "verbose_logging" in self.config and (self.config.verbose_logging.lower()=="yes" or self.config.verbose_logging.lower()=="no"):
@@ -147,7 +147,7 @@ class danboorubot(ananas.PineappleBot):
     def start(self):
         self.tags = self.config.tags.split(',')
         self.db_file = "{0}.db".format(self.config._name)
-        self.log_file = sys.stdout
+        self.log_file = sys.stderr
         if "admin" in self.config and len(self.config.admin)>0:
             self.admin=self.config.admin
         if "log_file" in self.config and len(self.config.log_file)>0:
@@ -362,7 +362,7 @@ class admin_cleaner(ananas.PineappleBot):
         self.verbose_logging = False
         
     def start(self):
-        self.log_file = sys.stdout
+        self.log_file = sys.stderr
         if "verbose_logging" in self.config and (self.config.verbose_logging.lower()=="yes" or self.config.verbose_logging.lower()=="no"):
             if self.config.verbose_logging.lower()=="yes": self.verbose_logging = True
             else: self.verbose_logging = False
