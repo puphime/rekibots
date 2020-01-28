@@ -48,20 +48,20 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 `offset`: (default = 0) offset posting time by this many minutes (eg. with a value of 2, instead of posting at 0 and 30 minutes past, post at 2 and 32 minutes past).
 
-`log_file`: file to save logs in. If not present, will print to stderr. (This only works for the actual bot output and not ananas' native output unless you can toggle log_to_stderr which seems to be unimplemented)
-
 `db_file`: sqlite database file. If not present, will default to `[bot name].db` in the working dir.
 
-`verbose_logging`: (default = no) increase the amount of information produced by rekibots
+`log_file`: file to save logs in. If not present, will print to stderr. (This only works for the actual bot output and not ananas' native output unless you can toggle log_to_stderr which seems to be unimplemented)
+
+`verbose_logging`: (default = no) increase the amount of information produced by rekibots (available values = `yes, no, very`)
 
 ### Reminder bot
 
-`log_file`: file to save logs in. If not present, will print to stderr. (This only works for the actual bot output and not ananas' native output unless you can toggle log_to_stderr which seems to be unimplemented)
+`log_file`: file to save logs in. If not present, will print to stderr.
 
-`verbose_logging`: (default = no) increase the amount of information produced by rekibots
+`verbose_logging`: (default = no) increase the amount of information produced by rekibots (available values = `yes, no, very`)
 
 ### Admin cleaner bot
 
-`log_file`: file to save logs in. If not present, will print to stderr. (This only works for the actual bot output and not ananas' native output unless you can toggle log_to_stderr which seems to be unimplemented)
+`log_file`: file to save logs in. If not present, will print to stderr.
 
-`verbose_logging`: (default = no) increase the amount of information produced by rekibots
+`verbose_logging`: (default = no) increase the amount of information produced by rekibots (available values = `yes, no, very`)

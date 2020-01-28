@@ -14,15 +14,19 @@ import os
 class reminder(ananas.PineappleBot):
     def init(self):
         self.admin = "pup_hime@slime.global"
-        self.verbose_logging = False
+        self.verbose_logging = False #the bot's verbosity
+        self.verbose = False #ananas' own verbosity
         
     def start(self):
         self.log_file = sys.stderr
         if "log_file" in self.config and len(self.config.log_file)>0:
             self.log_file = open(self.config.log_file, "a")
-        if "verbose_logging" in self.config and (self.config.verbose_logging.lower()=="yes" or self.config.verbose_logging.lower()=="no"):
-            if self.config.verbose_logging.lower()=="yes": self.verbose_logging = True
-            else: self.verbose_logging = False
+            self.log_to_stderr = False
+        if "verbose" in self.config and (self.config.verbose.lower() in ['yes','no','very']):
+            if self.config.verbose.lower()=="yes": self.verbose_logging = True
+            elif self.config.verbose.lower()=="very": 
+                self.verbose_logging = True
+                self.verbose = True
         if "admin" in self.config and len(self.config.admin)>0:
             self.admin=self.config.admin
         self.me = self.mastodon.account_verify_credentials()
@@ -116,7 +120,8 @@ class danboorubot(ananas.PineappleBot):
         self.h = HTMLParser()
         
         self.admin = "pup_hime@slime.global"
-        self.verbose_logging = False
+        self.verbose_logging = False #the bot's verbosity
+        self.verbose = False #ananas' own verbosity
         
         self.queue = []
         self.blacklist_tags = []
@@ -148,13 +153,16 @@ class danboorubot(ananas.PineappleBot):
         self.tags = self.config.tags.split(',')
         self.db_file = "{0}.db".format(self.config._name)
         self.log_file = sys.stderr
-        if "admin" in self.config and len(self.config.admin)>0:
-            self.admin=self.config.admin
         if "log_file" in self.config and len(self.config.log_file)>0:
             self.log_file = open(self.config.log_file, "a")
-        if "verbose_logging" in self.config and self.config.verbose_logging.lower() in ['yes','no']:
-            if self.config.verbose_logging.lower()=="yes": self.verbose_logging = True
-            else: self.verbose_logging = False
+            self.log_to_stderr = False
+        if "verbose" in self.config and (self.config.verbose.lower() in ['yes','no','very']):
+            if self.config.verbose.lower()=="yes": self.verbose_logging = True
+            elif self.config.verbose.lower()=="very": 
+                self.verbose_logging = True
+                self.verbose = True
+        if "admin" in self.config and len(self.config.admin)>0:
+            self.admin=self.config.admin
         if 'db_file' in self.config and len(self.config.db_file)>0:
             self.db_file = self.config.db_file
         if 'blacklist_tags' in self.config and len(self.config.blacklist_tags)>0:
@@ -359,15 +367,19 @@ class danboorubot(ananas.PineappleBot):
 class admin_cleaner(ananas.PineappleBot):
     def init(self):
         self.admin = "pup_hime@slime.global"
-        self.verbose_logging = False
+        self.verbose_logging = False #the bot's verbosity
+        self.verbose = False #ananas' own verbosity  
         
     def start(self):
         self.log_file = sys.stderr
-        if "verbose_logging" in self.config and (self.config.verbose_logging.lower()=="yes" or self.config.verbose_logging.lower()=="no"):
-            if self.config.verbose_logging.lower()=="yes": self.verbose_logging = True
-            else: self.verbose_logging = False
         if "log_file" in self.config and len(self.config.log_file)>0:
             self.log_file = open(self.config.log_file, "a")
+            self.log_to_stderr = False
+        if "verbose" in self.config and (self.config.verbose.lower() in ['yes','no','very']):
+            if self.config.verbose.lower()=="yes": self.verbose_logging = True
+            elif self.config.verbose.lower()=="very": 
+                self.verbose_logging = True
+                self.verbose = True
         self.me = self.mastodon.account_verify_credentials()
         self.last_checked_post = self.mastodon.timeline_home()[0]
         print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Bot started.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
