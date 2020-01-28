@@ -55,16 +55,16 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 `log_file`: file to save logs in. If not present, will print to stderr.
 
-`verbose_logging`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
+`verbose`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
 
 ### Reminder bot
 
 `log_file`: file to save logs in. If not present, will print to stderr.
 
-`verbose_logging`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
+`verbose`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
 
 ### Admin cleaner bot
 
 `log_file`: file to save logs in. If not present, will print to stderr.
 
-`verbose_logging`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
+`verbose`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
