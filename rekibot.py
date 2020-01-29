@@ -236,7 +236,7 @@ class danboorubot(ananas.PineappleBot):
                 
             conn.commit()
             conn.close()
-            print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Database rebuild with migration completed OK.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
+            print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Database rebuild with migration completed.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
             self.config.migratedb="no"
         print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Bot started.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
         
@@ -323,7 +323,7 @@ class danboorubot(ananas.PineappleBot):
             #check for blacklisted tags before posting
             if len(self.blacklist_tags)>0 and any(tag in tags.split(" ") for tag in self.blacklist_tags):
                 foundtags = str(list(set(tags.split(" ")).intersection(self.blacklist_tags)))
-                self.blacklist(id,"Found blacklist tags {1}".format(foundtags))
+                self.blacklist(id,"Found blacklist tags {0}".format(foundtags))
                 continue
             #check for mandatory tags before posting
             if ((self.mandatory_tag_mode=='any' and not any(tag in tags.split(" ") for tag in self.mandatory_tags)) or (self.mandatory_tag_mode=='all' and not all(tag in tags.split(" ") for tag in self.mandatory_tags))) and len(self.mandatory_tags)>0:
