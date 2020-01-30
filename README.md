@@ -31,31 +31,35 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 `blacklist_tags`: (default = "") comma-separated tags to be blacklisted.
 
-`mandatory_tags`: (default = "") comma-separated tags. Any of them must appear in the post to be posted.
-
 `skip_tags`: (default = "") comma-separated tags that enable a post to be skipped based on `skip_chance`.
-
-`mandatory_tag_mode`: (default = any) (available values = `any, all`) require any or all mandatory tags.
 
 `skip_chance`: (default = 75) percentage chance of skipping over a post containing a tag listed in `skip_tags`.
 
-`booru_url`: (default = "https://danbooru.donmai.us") The URL for the booru the bot should pull images from.
+`mandatory_tags`: (default = "") comma-separated tags. Any of them must appear in the post to be posted.
 
-`max_page`: (default = 300) how many 200-item pages to check on booru before stopping processing.
+`mandatory_tag_mode`: (default = any) (available values = `any, all`) require any or all mandatory tags.
+
+`booru_url`: (default = "https://danbooru.donmai.us") The URL for the booru the bot should pull images from.
 
 `max_badpages`: (default = 10) how many 200-item pages with no new images to tolerate before stopping processing.
 
-`queue_length`: (default = 5) how many posts to draw from the db into memory at a time.
-
-`post_every`: (default = 30) how many minutes between each post from the bot (keep in mind they must fit within an hour, so any more than 30 will only post twice at most).
-
-`offset`: (default = 0) offset posting time by this many minutes (eg. with a value of 2, instead of posting at 0 and 30 minutes past, post at 2 and 32 minutes past).
+`max_page`: (default = 300) how many 200-item pages to check on booru before stopping processing.
 
 `db_file`: sqlite database file. If not present, will default to `[bot name].db` in the working directory.
+
+`queue_length`: (default = 5) how many posts to draw from the db into memory at a time.
+
+`rebuild_db`: (default = no) (available values = `yes, no, with_migration`) trigger database rebuild. `with_migration` causes the blacklisted and posted flags to be kept. After migration is done, automatically set to `no`.
+
+`post_every`: (default = 30) how many minutes between each post from the bot (keep in mind they must fit within an hour, so any more than 30 will only post twice at 
+most).
+
+`offset`: (default = 0) offset posting time by this many minutes (eg. with a value of 2, instead of posting at 0 and 30 minutes past, post at 2 and 32 minutes past).
 
 `log_file`: file to save logs in. If not present, will print to stderr.
 
 `verbose`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
+
 
 ### Reminder bot
 

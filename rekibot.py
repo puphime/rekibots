@@ -27,8 +27,7 @@ class reminder(ananas.PineappleBot):
             elif self.config.verbose.lower()=="very": 
                 self.verbose_logging = True
                 self.verbose = True
-        if "admin" in self.config and len(self.config.admin)>0:
-            self.admin=self.config.admin
+        if "admin" in self.config and len(self.config.admin)>0: self.admin=self.config.admin
         self.me = self.mastodon.account_verify_credentials()
         self.last_checked_post = self.mastodon.timeline_home()[0]
         self.h = HTMLParser()
@@ -41,18 +40,14 @@ class reminder(ananas.PineappleBot):
             my_id = self.me['id']
             followers_count = self.me['followers_count']
             followers = self.mastodon.account_followers(my_id,limit=80)
-            if len(followers)<followers_count:
-                followers = self.mastodon.fetch_remaining(followers)
+            if len(followers)<followers_count: followers = self.mastodon.fetch_remaining(followers)
             following_count = self.me['following_count']
             following = self.mastodon.account_following(my_id,limit=80)
-            if len(following)<following_count:
-                following = self.mastodon.fetch_remaining(following)
+            if len(following)<following_count: following = self.mastodon.fetch_remaining(following)
             followingids=[]
-            for followed in following:
-                followingids=followingids+[followed['id'],]
+            for followed in following: followingids=followingids+[followed['id'],]
             followerids=[]
-            for follower in followers:
-                followerids=followerids+[follower['id'],]
+            for follower in followers: followerids=followerids+[follower['id'],]
             for follower in followerids:
                 if follower not in followingids:
                     time.sleep(1)
@@ -82,11 +77,10 @@ class reminder(ananas.PineappleBot):
             if len(posts)>0:
                 for post in posts:
                     if len(post['media_attachments'])>0 and post['reblog'] is None and post['in_reply_to_id'] is None and not "RT @" in post['content']:
-                        marked = False
-                        for attachment in post['media_attachments']:
-                            if attachment['description'] is None:
-                                marked = True
-                        if marked:
+                        flag = False
+                        for attachment in post['media_attachments']: 
+                            if attachment['description'] is None: flag = True
+                        if flag:
                             if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.check_posts: -> Posting reply.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                             self.mastodon.status_post('@'+post['account']['acct']+' hey, just so you know, this status includes an attachment with missing accessibility (alt) text.', in_reply_to_id=(post['id']),visibility='direct')
                 self.last_checked_post = posts[0]
@@ -99,8 +93,7 @@ class reminder(ananas.PineappleBot):
     def handle_reply(self, status, user):
         try:
             if user['acct'] == self.admin:
-                if 'delete this!' in status['content']:
-                    self.mastodon.status_delete(status['in_reply_to_id'])
+                if 'delete this!' in status['content']: self.mastodon.status_delete(status['in_reply_to_id'])
                 elif '!announce' in status['content']:
                     text = re.sub('<[^<]+?>', '', status['content'])
                     text = self.h.unescape(text)
@@ -137,6 +130,9 @@ class danboorubot(ananas.PineappleBot):
         self.tags = []
         self.db_file = ""
         
+        self.rebuild_db = False
+        self.migrate_marks = False
+        
         self.booru_url = 'https://danbooru.donmai.us'
         
         self.create_table_sql = "create table if not exists images (danbooru_id integer primary key,url_danbooru text,url_source text,tags text,posted integer default 0,blacklisted integer default 0,UNIQUE(url_danbooru),UNIQUE(url_source));"
@@ -150,56 +146,49 @@ class danboorubot(ananas.PineappleBot):
         self.migrate_db_sql3 = "update images set posted=1 where danbooru_id in (select danbooru_id from images_old where posted=1);"
         self.migrate_db_sql4 = "drop table images_old;"
         
-    def start(self):
-        
+    def start(self):   
         self.tags = self.config.tags.split(',')
         self.db_file = "{0}.db".format(self.config._name)
         self.log_file = sys.stderr
         if "log_file" in self.config and len(self.config.log_file)>0:
             self.log_file = open(self.config.log_file, "a")
             self.log_to_stderr = False
-        if "verbose" in self.config and (self.config.verbose.lower() in ['yes','no','very']):
+        if "verbose" in self.config and (self.config.verbose.lower() in ['no','yes','very']):
             if self.config.verbose.lower()=="yes": self.verbose_logging = True
             elif self.config.verbose.lower()=="very": 
                 self.verbose_logging = True
                 self.verbose = True
-        if "admin" in self.config and len(self.config.admin)>0:
-            self.admin=self.config.admin
-        if "booru_url" in self.config and len(self.config.booru_url)>0:
-            self.booru_url=self.config.booru_url
-        if 'db_file' in self.config and len(self.config.db_file)>0:
-            self.db_file = self.config.db_file
-        if 'blacklist_tags' in self.config and len(self.config.blacklist_tags)>0:
-            self.blacklist_tags = self.config.blacklist_tags.split(',')
-        if 'mandatory_tags' in self.config and len(self.config.mandatory_tags)>0:
-            self.mandatory_tags = self.config.mandatory_tags.split(',')
-        if 'skip_tags' in self.config and len(self.config.skip_tags)>0:
-            self.skip_tags = self.config.skip_tags.split(',')
-        if 'mandatory_tag_mode' in self.config and self.config.mandatory_tag_mode in ['any','all']:
-            self.mandatory_tag_mode = self.config.mandatory_tag_mode
-        if 'skip_chance' in self.config and self.config.skip_chance.isdigit():
-            self.skip_chance = int(self.config.skip_chance)
-        if 'max_page' in self.config and self.config.max_page.isdigit():
-            self.max_page = int(self.config.max_page)
-        if 'max_badpages' in self.config and self.config.max_badpages.isdigit():
-            self.max_badpages = int(self.config.max_badpages)
-        if 'queue_length' in self.config and self.config.queue_length.isdigit():
-            self.queue_length = int(self.config.queue_length)
-        if 'post_every' in self.config and self.config.post_every.isdigit():
-            self.post_every = int(self.config.post_every)
-        if 'offset' in self.config and self.config.offset.isdigit():
-            self.offset = int(self.config.offset)
+        if "admin" in self.config and len(self.config.admin)>0: self.admin=self.config.admin
+        if "booru_url" in self.config and len(self.config.booru_url)>0: self.booru_url=self.config.booru_url
+        if 'db_file' in self.config and len(self.config.db_file)>0: self.db_file = self.config.db_file
+        if 'blacklist_tags' in self.config and len(self.config.blacklist_tags)>0: self.blacklist_tags = self.config.blacklist_tags.split(',')
+        if 'mandatory_tags' in self.config and len(self.config.mandatory_tags)>0: self.mandatory_tags = self.config.mandatory_tags.split(',')
+        if 'skip_tags' in self.config and len(self.config.skip_tags)>0: self.skip_tags = self.config.skip_tags.split(',')
+        if 'mandatory_tag_mode' in self.config and self.config.mandatory_tag_mode in ['any','all']: self.mandatory_tag_mode = self.config.mandatory_tag_mode
+        if 'skip_chance' in self.config and self.config.skip_chance.isdigit(): self.skip_chance = int(self.config.skip_chance)
+        if 'max_page' in self.config and self.config.max_page.isdigit(): self.max_page = int(self.config.max_page)
+        if 'max_badpages' in self.config and self.config.max_badpages.isdigit(): self.max_badpages = int(self.config.max_badpages)
+        if 'queue_length' in self.config and self.config.queue_length.isdigit(): self.queue_length = int(self.config.queue_length)
+        if 'post_every' in self.config and self.config.post_every.isdigit(): self.post_every = int(self.config.post_every)
+        if 'offset' in self.config and self.config.offset.isdigit(): self.offset = int(self.config.offset)
+        if 'rebuild_db' in self.config and self.config.rebuild_db in ['no','yes','with_migration']:
+            if self.config.rebuild_db == "yes": self.rebuild_db = True
+            elif self.config.rebuild_db == "with_migration":
+                self.rebuild_db = True
+                self.migrate_marks = True
         
         self.client = Danbooru(site_url=self.booru_url)
         
         conn = sqlite3.connect(self.db_file)
         cur = conn.cursor()
         
-        if 'migratedb' in self.config and self.config.migratedb == "yes":
-            print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Database rebuild with migration starting...".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
+        if self.rebuild_db:
+            if self.migrate_marks: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Database rebuild with migration starting...".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
+            else: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Database rebuild starting...".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
             try:
                 if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: ALTER TABLE images RENAME TO images_old;".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql1)
+                if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: CREATE TABLE images (danbooru_id INTEGER PRIMARY KEY,url_danbooru TEXT,url_source TEXT,tags TEXT,posted INTEGER DEFAULT 0,blacklisted INTEGER DEFAULT 0,UNIQUE(url_danbooru),UNIQUE(url_source));;".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
             except Exception as e:
                 print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: {2}".format(datetime.now(),self.config._name,e), file=self.log_file, flush=True)
                 conn.rollback()
@@ -214,18 +203,18 @@ class danboorubot(ananas.PineappleBot):
         cur = conn.cursor()
         
         cur.execute(self.select_sql, (self.queue_length,))
-        if len(cur.fetchall())==0:
-            self.update_db()
+        if len(cur.fetchall())==0: self.update_db()
         conn.close()
         
-        if 'migratedb' in self.config and self.config.migratedb == "yes":
+        if self.rebuild_db:
             conn = sqlite3.connect(self.db_file)
             cur = conn.cursor()
             try:
-                if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: UPDATE images SET blacklisted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE blacklisted=1);".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
-                cur.execute(self.migrate_db_sql2)
-                if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: UPDATE images SET posted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE posted=1);".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
-                cur.execute(self.migrate_db_sql3)
+                if self.migrate_marks:
+                    if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: UPDATE images SET blacklisted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE blacklisted=1);".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
+                    cur.execute(self.migrate_db_sql2)
+                    if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: UPDATE images SET posted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE posted=1);".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
+                    cur.execute(self.migrate_db_sql3)
                 if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: DROP TABLE images_old;".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql4)
             except Exception as e:
@@ -236,8 +225,8 @@ class danboorubot(ananas.PineappleBot):
                 
             conn.commit()
             conn.close()
-            print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Database rebuild with migration completed.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
-            self.config.migratedb="no"
+            print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Database rebuild completed.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
+            self.config.rebuild_db="no"
         print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Bot started.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
         
     @ananas.schedule(hour="*/6", minute=15)
@@ -249,42 +238,30 @@ class danboorubot(ananas.PineappleBot):
             badpages=0
             for page in range(1,self.max_page+1):
                 while True:
-                    try:
-                        posts = self.client.post_list(tags=t, page=str(page), limit=200)
-                    except:
-                        continue
-                    else:
-                        break
+                    try: posts = self.client.post_list(tags=t, page=str(page), limit=200)
+                    except: continue
+                    else: break
                 if len(posts) == 0:
                     if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.update_db: No more posts. Break processing.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                     break
                 counter=0
                 for post in posts:
                     if ((not any(x in post['source'].lower() for x in ['drawfag','.png','.jpg','.gif']) and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and (not any(tag in post['tag_string'].split(" ") for tag in self.blacklist_tags) or len(self.blacklist_tags)==0) and ((self.mandatory_tag_mode=='any' and any(tag in post['tag_string'].split(" ") for tag in self.mandatory_tags)) or (self.mandatory_tag_mode=='all' and all(tag in post['tag_string'].split(" ") for tag in self.mandatory_tags)) or len(self.mandatory_tags)==0):
-                        if post['pixiv_id'] is not None:
-                            source_url = 'https://www.pixiv.net/artworks/{0}'.format(post['pixiv_id'])
-                        else:
-                            source_url = post['source']
-                        if 'file_url' in post:
-                            danbooru_url = post['file_url']
-                        elif 'large_file_url' in post:
-                            danbooru_url = post['large_file_url']
-                        else:
-                            continue
-                        try:
-                            cur.execute(self.insert_sql, (int(post['id']),danbooru_url,source_url,post['tag_string']))
-                        except:
-                            continue
-                        else:
-                            counter=counter+1
+                        if post['pixiv_id'] is not None: source_url = 'https://www.pixiv.net/artworks/{0}'.format(post['pixiv_id'])
+                        else: source_url = post['source']
+                        if 'file_url' in post: danbooru_url = post['file_url']
+                        elif 'large_file_url' in post: danbooru_url = post['large_file_url']
+                        else: continue
+                        try: cur.execute(self.insert_sql, (int(post['id']),danbooru_url,source_url,post['tag_string']))
+                        except: continue
+                        else: counter=counter+1
                 if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.update_db: Page {2} - inserted {3} entries.".format(datetime.now(),self.config._name,page,counter), file=self.log_file, flush=True)
                 if counter == 0:
                     badpages = badpages+1
                     if badpages == self.max_badpages:
                         if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.update_db: No new posts on {2} pages in a row. Break processing.".format(datetime.now(),self.config._name,badpages), file=self.log_file, flush=True)
                         break
-                else:
-                    badpages = 0
+                else: badpages = 0
         conn.commit()
         conn.close()
         if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.update_db: Completed.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
@@ -295,12 +272,11 @@ class danboorubot(ananas.PineappleBot):
         cur.execute(self.blacklist_sql, (id,))
         conn.commit()
         conn.close()
-        print("[{0:%Y-%m-%d %H:%M:%S}] {1}.blacklist: Blacklisted http://danbooru.donmai.us/posts/{2}. Reason: {3}".format(datetime.now(),self.config._name,id,reason), file=self.log_file, flush=True)
+        print("[{0:%Y-%m-%d %H:%M:%S}] {1}.blacklist: Blacklisted {2}/posts/{3}. Reason: {4}".format(datetime.now(),self.config._name,self.booru_url,id,reason), file=self.log_file, flush=True)
         
     @ananas.schedule(minute="*")
     def post(self):
-        if not any(datetime.now().minute==x+self.offset for x in range(0,60,self.post_every)):
-            return
+        if not any(datetime.now().minute==x+self.offset for x in range(0,60,self.post_every)): return
         while True:
             while len(self.queue) == 0:
                 try:
@@ -317,8 +293,7 @@ class danboorubot(ananas.PineappleBot):
                         conn.commit()
                     conn.close()
                     if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Refilled queue with {2} entries.".format(datetime.now(),self.config._name,len(self.queue)), file=self.log_file, flush=True)
-                except:
-                    continue
+                except: continue
             id,url,src,tags = self.queue.pop()
             #check for blacklisted tags before posting
             if len(self.blacklist_tags)>0 and any(tag in tags.split(" ") for tag in self.blacklist_tags):
@@ -338,19 +313,18 @@ class danboorubot(ananas.PineappleBot):
                     continue
             try:
                 url = urllib.request.urlretrieve(url)[0]
-                with open(url,'rb') as file:
-                    mediadict = self.mastodon.media_post(file.read(),self.mime.from_file(url))
-                status_text = 'http://danbooru.donmai.us/posts/{0}\r\nsource: {1}'.format(id,src)
+                with open(url,'rb') as file: mediadict = self.mastodon.media_post(file.read(),self.mime.from_file(url))
+                status_text = '{0}/posts/{1}\r\nsource: {2}'.format(self.booru_url,id,src)
                 self.mastodon.status_post(status_text, in_reply_to_id=None, media_ids=(mediadict['id'],), sensitive=True, visibility="unlisted", spoiler_text=None)
             except Exception as e:
-                print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Post http://danbooru.donmai.us/posts/{2} threw exception: {3}".format(datetime.now(),self.config._name,id,e), file=self.log_file, flush=True)
+                if e.args[1]==422: self.blacklist(id,"{0}. {1}.".format(e.args[2],e.args[3]))
+                else: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Post {2}/posts/{3} threw exception: {4}".format(datetime.now(),self.config._name,self.booru_url,id,e), file=self.log_file, flush=True)
                 continue
             else:
                 if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Posted.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                 break
-            finally:
-                if os.path.isfile(url):
-                    os.remove(url)
+            finally: 
+                if os.path.isfile(url): os.remove(url)
 
     @ananas.reply
     def handle_reply(self, status, user):

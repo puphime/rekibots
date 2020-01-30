@@ -4,6 +4,7 @@
 *.cfg
 *.db
 *.kate-swp
+.directory
 db/*
 script_logs/*
 __pycache__/*
