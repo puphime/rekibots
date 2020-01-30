@@ -131,16 +131,16 @@ class danboorubot(ananas.PineappleBot):
         self.db_file = ""
         
         self.rebuild_db = False
-        self.migrate_marks = False
+        self.migrate_flags = False
         
         self.booru_url = 'https://danbooru.donmai.us'
         
         self.create_table_sql = "create table if not exists images (danbooru_id integer primary key,url_danbooru text,url_source text,tags text,posted integer default 0,blacklisted integer default 0,UNIQUE(url_danbooru),UNIQUE(url_source));"
         self.insert_sql = "insert into images(danbooru_id,url_danbooru,url_source,tags) values(?,?,?,?);"
         self.select_sql = "select danbooru_id,url_danbooru,url_source,tags from images where blacklisted=0 and posted=0 order by random() limit ?;"
-        self.blacklist_sql = "update images set blacklisted=1 where danbooru_id=?;"
-        self.unmark_sql = "update images set posted=0;"
-        self.mark_sql = "update images set posted=1 where danbooru_id=?;"
+        self.flag_blacklisted_sql = "update images set blacklisted=1 where danbooru_id=?;"
+        self.remove_posted_flag_sql = "update images set posted=0;"
+        self.flag_posted_sql = "update images set posted=1 where danbooru_id=?;"
         self.migrate_db_sql1 = "alter table images rename to images_old;"
         self.migrate_db_sql2 = "update images set blacklisted=1 where danbooru_id in (select danbooru_id from images_old where blacklisted=1);"
         self.migrate_db_sql3 = "update images set posted=1 where danbooru_id in (select danbooru_id from images_old where posted=1);"
@@ -175,7 +175,7 @@ class danboorubot(ananas.PineappleBot):
             if self.config.rebuild_db == "yes": self.rebuild_db = True
             elif self.config.rebuild_db == "with_migration":
                 self.rebuild_db = True
-                self.migrate_marks = True
+                self.migrate_flags = True
         
         self.client = Danbooru(site_url=self.booru_url)
         
@@ -183,18 +183,18 @@ class danboorubot(ananas.PineappleBot):
         cur = conn.cursor()
         
         if self.rebuild_db:
-            if self.migrate_marks: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Database rebuild with migration starting...".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
+            if self.migrate_flags: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Database rebuild with migration starting...".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
             else: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: Database rebuild starting...".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
             try:
                 if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: ALTER TABLE images RENAME TO images_old;".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                 cur.execute(self.migrate_db_sql1)
-                if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: CREATE TABLE images (danbooru_id INTEGER PRIMARY KEY,url_danbooru TEXT,url_source TEXT,tags TEXT,posted INTEGER DEFAULT 0,blacklisted INTEGER DEFAULT 0,UNIQUE(url_danbooru),UNIQUE(url_source));;".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
             except Exception as e:
                 print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: {2}".format(datetime.now(),self.config._name,e), file=self.log_file, flush=True)
                 conn.rollback()
                 conn.close()
                 return
-                
+        
+        if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: CREATE TABLE IF NOT EXISTS images (danbooru_id INTEGER PRIMARY KEY,url_danbooru TEXT,url_source TEXT,tags TEXT,posted INTEGER DEFAULT 0,blacklisted INTEGER DEFAULT 0,UNIQUE(url_danbooru),UNIQUE(url_source));;".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
         cur.execute(self.create_table_sql)
         conn.commit()
         conn.close()
@@ -210,7 +210,7 @@ class danboorubot(ananas.PineappleBot):
             conn = sqlite3.connect(self.db_file)
             cur = conn.cursor()
             try:
-                if self.migrate_marks:
+                if self.migrate_flags:
                     if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: UPDATE images SET blacklisted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE blacklisted=1);".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
                     cur.execute(self.migrate_db_sql2)
                     if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.start: UPDATE images SET posted=1 WHERE danbooru_id IN (SELECT danbooru_id FROM images_old WHERE posted=1);".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
@@ -269,7 +269,7 @@ class danboorubot(ananas.PineappleBot):
     def blacklist(self,id,reason):
         conn = sqlite3.connect(self.db_file)
         cur = conn.cursor()
-        cur.execute(self.blacklist_sql, (id,))
+        cur.execute(self.flag_blacklisted_sql, (id,))
         conn.commit()
         conn.close()
         print("[{0:%Y-%m-%d %H:%M:%S}] {1}.blacklist: Blacklisted {2}/posts/{3}. Reason: {4}".format(datetime.now(),self.config._name,self.booru_url,id,reason), file=self.log_file, flush=True)
@@ -286,10 +286,10 @@ class danboorubot(ananas.PineappleBot):
                     self.queue = cur.fetchall()
                     if len(self.queue) == 0:
                         print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: No valid entries. Resetting db.".format(datetime.now(),self.config._name), file=self.log_file, flush=True)
-                        cur.execute(self.unmark_sql)
+                        cur.execute(self.remove_posted_flag_sql)
                         conn.commit()
                     else:
-                        cur.executemany(self.mark_sql, [(str(item[0]),) for item in self.queue])
+                        cur.executemany(self.flag_posted_sql, [(str(item[0]),) for item in self.queue])
                         conn.commit()
                     conn.close()
                     if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Refilled queue with {2} entries.".format(datetime.now(),self.config._name,len(self.queue)), file=self.log_file, flush=True)
