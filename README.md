@@ -27,17 +27,15 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 ### Danbooru bot
 
-`tags`: [REQUIRED] comma-separated tags to use for search in the api, ex. `"gun,handgun,rifle,shotgun,tactical_clothes"`
+`tags`: [REQUIRED] comma-separated search terms for the booru, ex. `"rifle,2girls gun"`
 
-`blacklist_tags`: (default = "") comma-separated tags to be blacklisted.
+`blacklist_tags`: (default = "") comma-separated tags to be blacklisted. Allows for rudimentary logic ie. Spaces are AND and commas are OR. ANDs are resolved first. ex. `"loli,monster_girl_encyclopedia character_profile"`
 
-`skip_tags`: (default = "") comma-separated tags that enable a post to be skipped based on `skip_chance`.
+`skip_tags`: (default = "") comma-separated tags that enable a post to be skipped based on `skip_chance`. Allows for rudimentary logic ie. Spaces are AND and commas are OR. ANDs are resolved first.
 
 `skip_chance`: (default = 75) percentage chance of skipping over a post containing a tag listed in `skip_tags`.
 
-`mandatory_tags`: (default = "") comma-separated tags. Any of them must appear in the post to be posted.
-
-`mandatory_tag_mode`: (default = any) (available values = `any, all`) require any or all mandatory tags.
+`mandatory_tags`: (default = "") comma-separated tags that must be present in the post. Allows for rudimentary logic ie. Spaces are AND and commas are OR. ANDs are resolved first.
 
 `booru_url`: (default = "https://danbooru.donmai.us") The URL for the booru the bot should pull images from.
 

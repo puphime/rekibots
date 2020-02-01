@@ -116,11 +116,10 @@ class danboorubot(ananas.PineappleBot):
         self.verbose = False #ananas' own verbosity
         
         self.queue = []
-        self.blacklist_tags = []
-        self.mandatory_tags = []
-        self.skip_tags = []
+        self.blacklist_tags = ""
+        self.mandatory_tags = ""
+        self.skip_tags = ""
         
-        self.mandatory_tag_mode = 'any'
         self.skip_chance = 75
         self.max_page = 300
         self.max_badpages = 10    
@@ -161,10 +160,9 @@ class danboorubot(ananas.PineappleBot):
         if "admin" in self.config and len(self.config.admin)>0: self.admin=self.config.admin
         if "booru_url" in self.config and len(self.config.booru_url)>0: self.booru_url=self.config.booru_url
         if 'db_file' in self.config and len(self.config.db_file)>0: self.db_file = self.config.db_file
-        if 'blacklist_tags' in self.config and len(self.config.blacklist_tags)>0: self.blacklist_tags = self.config.blacklist_tags.split(',')
-        if 'mandatory_tags' in self.config and len(self.config.mandatory_tags)>0: self.mandatory_tags = self.config.mandatory_tags.split(',')
-        if 'skip_tags' in self.config and len(self.config.skip_tags)>0: self.skip_tags = self.config.skip_tags.split(',')
-        if 'mandatory_tag_mode' in self.config and self.config.mandatory_tag_mode in ['any','all']: self.mandatory_tag_mode = self.config.mandatory_tag_mode
+        if 'blacklist_tags' in self.config and len(self.config.blacklist_tags)>0: self.blacklist_tags = self.config.blacklist_tags
+        if 'mandatory_tags' in self.config and len(self.config.mandatory_tags)>0: self.mandatory_tags = self.config.mandatory_tags
+        if 'skip_tags' in self.config and len(self.config.skip_tags)>0: self.skip_tags = self.config.skip_tags
         if 'skip_chance' in self.config and self.config.skip_chance.isdigit(): self.skip_chance = int(self.config.skip_chance)
         if 'max_page' in self.config and self.config.max_page.isdigit(): self.max_page = int(self.config.max_page)
         if 'max_badpages' in self.config and self.config.max_badpages.isdigit(): self.max_badpages = int(self.config.max_badpages)
@@ -246,7 +244,7 @@ class danboorubot(ananas.PineappleBot):
                     break
                 counter=0
                 for post in posts:
-                    if ((not any(x in post['source'].lower() for x in ['drawfag','.png','.jpg','.gif']) and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and (not any(tag in post['tag_string'].split(" ") for tag in self.blacklist_tags) or len(self.blacklist_tags)==0) and ((self.mandatory_tag_mode=='any' and any(tag in post['tag_string'].split(" ") for tag in self.mandatory_tags)) or (self.mandatory_tag_mode=='all' and all(tag in post['tag_string'].split(" ") for tag in self.mandatory_tags)) or len(self.mandatory_tags)==0):
+                    if ((not any(x in post['source'].lower() for x in ['drawfag','.png','.jpg','.gif']) and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted']==False and not self.check_tags(post['tag_string'],self.blacklist_tags) and (self.check_tags(post['tag_string'],self.mandatory_tags) or len(self.mandatory_tags)==0):
                         if post['pixiv_id'] is not None: source_url = 'https://www.pixiv.net/artworks/{0}'.format(post['pixiv_id'])
                         else: source_url = post['source']
                         if 'file_url' in post: danbooru_url = post['file_url']
@@ -274,6 +272,28 @@ class danboorubot(ananas.PineappleBot):
         conn.close()
         print("[{0:%Y-%m-%d %H:%M:%S}] {1}.blacklist: Blacklisted {2}/posts/{3}. Reason: {4}".format(datetime.now(),self.config._name,self.booru_url,id,reason), file=self.log_file, flush=True)
         
+    def check_tags(self,post_tag_string,tag_string,mode="or"):
+        results=[]
+        if len(tag_string)==0:
+            return False
+        if mode=="or": tag_list=tag_string.split(",")
+        else: tag_list=tag_string.split(" ")
+        post_tag_list = post_tag_string.split(" ")
+        for tag in tag_list:
+            if " " in tag:
+                results.append(self.check_tags(post_tag_string,tag,"and"))
+            else:
+                if tag in post_tag_list:
+                    results.append(True)
+                else:
+                    results.append(False)
+        if mode=="or":
+            if any(results): return True
+            else: return False
+        else:
+            if all(results): return True
+            else: return False
+        
     @ananas.schedule(minute="*")
     def post(self):
         if not any(datetime.now().minute==x+self.offset for x in range(0,60,self.post_every)): return
@@ -295,21 +315,16 @@ class danboorubot(ananas.PineappleBot):
                     if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Refilled queue with {2} entries.".format(datetime.now(),self.config._name,len(self.queue)), file=self.log_file, flush=True)
                 except: continue
             id,url,src,tags = self.queue.pop()
-            #check for blacklisted tags before posting
-            if len(self.blacklist_tags)>0 and any(tag in tags.split(" ") for tag in self.blacklist_tags):
-                foundtags = str(list(set(tags.split(" ")).intersection(self.blacklist_tags)))
-                self.blacklist(id,"Found blacklist tags {0}".format(foundtags))
+            
+            if self.check_tags(tags,self.blacklist_tags):
+                self.blacklist(id,"Found blacklist tags {0}".format(str(list(set(tags.split(" ")).intersection(re.split(",| ",self.blacklist_tags))))))
                 continue
-            #check for mandatory tags before posting
-            if ((self.mandatory_tag_mode=='any' and not any(tag in tags.split(" ") for tag in self.mandatory_tags)) or (self.mandatory_tag_mode=='all' and not all(tag in tags.split(" ") for tag in self.mandatory_tags))) and len(self.mandatory_tags)>0:
+            if not self.check_tags(tags,self.mandatory_tags) and len(self.mandatory_tags)>0:
                 self.blacklist(id,"Mandatory tags not found")
                 continue
-            #check for skip tags before posting
-            if len(self.skip_tags)>0 and any(tag in tags.split(" ") for tag in self.skip_tags):
+            if self.check_tags(tags,self.skip_tags):
                 if random.randint(1,100) <= self.skip_chance:
-                    if self.verbose_logging: 
-                        foundtags = str(list(set(tags.split(" ")).intersection(self.skip_tags)))
-                        print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Skipped {2}. Reason: Found skip tags {3}".format(datetime.now(),self.config._name,id,foundtags), file=self.log_file, flush=True)
+                    if self.verbose_logging: print("[{0:%Y-%m-%d %H:%M:%S}] {1}.post: Skipped {2}. Reason: Found skip tags {3}".format(datetime.now(),self.config._name,id,str(list(set(tags.split(" ")).intersection(re.split(",| ",self.skip_tags)))), file=self.log_file, flush=True))
                     continue
             try:
                 url = urllib.request.urlretrieve(url)[0]
