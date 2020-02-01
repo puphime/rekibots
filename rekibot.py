@@ -274,25 +274,15 @@ class danboorubot(ananas.PineappleBot):
         
     def check_tags(self,post_tag_string,tag_string,mode="or"):
         results=[]
-        if len(tag_string)==0:
-            return False
+        if len(tag_string)==0: return False
         if mode=="or": tag_list=tag_string.split(",")
         else: tag_list=tag_string.split(" ")
         post_tag_list = post_tag_string.split(" ")
         for tag in tag_list:
-            if " " in tag:
-                results.append(self.check_tags(post_tag_string,tag,"and"))
-            else:
-                if tag in post_tag_list:
-                    results.append(True)
-                else:
-                    results.append(False)
-        if mode=="or":
-            if any(results): return True
-            else: return False
-        else:
-            if all(results): return True
-            else: return False
+            if " " in tag: results.append(self.check_tags(post_tag_string,tag,"and"))
+            else: results.append(tag in post_tag_list)
+        if mode=="or": return any(results)
+        else: return all(results)
         
     @ananas.schedule(minute="*")
     def post(self):
