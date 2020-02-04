@@ -75,7 +75,6 @@ class reminder(ananas.PineappleBot):
         except Exception as e:
             self.log(fname, e)
             return
-        if self.verbose_logging: self.log("check_follows", "Completed.")
    
     @ananas.schedule(minute = "*", second = 0)
     def check_posts(self):
@@ -95,7 +94,6 @@ class reminder(ananas.PineappleBot):
         except Exception as e:
             self.log(fname, e)
             return
-        if self.verbose_logging: self.log(fname, "Completed.")
             
     @ananas.reply
     def handle_reply(self, status, user):
@@ -323,16 +321,27 @@ class danboorubot(ananas.PineappleBot):
                     if self.verbose_logging: self.log(fname, "Refilled queue with {} entries.".format(len(self.queue)))
                 except: continue
             id, url, src, tags = self.queue.pop()
-            
             if self.check_tags(tags, self.blacklist_tags):
-                self.blacklist(id, "Found blacklist tags {}".format(str(list(set(tags.split(" ")).intersection(re.split(",| ", self.blacklist_tags))))))
+                intersect = list(set(tags.split(" ")).intersection(self.blacklist_tags.split(",")))
+                andtags = [i for i in self.blacklist_tags.split(",") if " " in i]
+                for tag in andtags:
+                    found = [i for i in tags.split(" ") if i in tag.split(" ")]
+                    if len(found) == len(tag.split(" ")):
+                        intersect.append(found)
+                self.blacklist(id, "Found blacklist tags {}".format(str(intersect)))
                 continue
             if not self.check_tags(tags, self.mandatory_tags) and len(self.mandatory_tags) > 0:
                 self.blacklist(id, "Mandatory tags not found")
                 continue
             if self.check_tags(tags, self.skip_tags):
                 if random.randint(1, 100) <= self.skip_chance:
-                    if self.verbose_logging: self.log(fname, "Skipped {}. Reason: Found skip tags {}".format(id, str(list(set(tags.split(" ")).intersection(re.split(", | ", self.skip_tags))))))
+                    intersect = list(set(tags.split(" ")).intersection(self.skip_tags.split(",")))
+                    andtags = [i for i in self.skip_tags.split(",") if " " in i]
+                    for tag in andtags:
+                        found = [i for i in tags.split(" ") if i in tag.split(" ")]
+                        if len(found) == len(tag.split(" ")):
+                            intersect.append(found)
+                    if self.verbose_logging: self.log(fname, "Skipped {}. Reason: Found skip tags {}".format(id, str(intersect)))
                     continue
             try:
                 saved_file_path = urllib.request.urlretrieve(url)[0]
