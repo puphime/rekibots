@@ -84,7 +84,7 @@ class reminder(ananas.PineappleBot):
             posts = self.mastodon.timeline_home(since_id = self.last_checked_post['id'])
             if len(posts) > 0:
                 for post in posts:
-                    if len(post['media_attachments']) > 0 and post['reblog'] is None and post['in_reply_to_id'] is None and not "RT @" in post['content']:
+                    if len(post['media_attachments']) > 0 and post['reblog'] is None and post['in_reply_to_id'] is None and post['account']['acct'] != self.admin:
                         flag = False
                         for attachment in post['media_attachments']: 
                             if attachment['description'] is None: flag = True
@@ -252,7 +252,6 @@ class danboorubot(ananas.PineappleBot):
             badpages = 0
             for page in range(1, self.max_page + 1):
                 while True:
-                    print("here")
                     try: posts = self.client.post_list(tags = t, page = str(page), limit = 200)
                     except: continue
                     else: break
@@ -261,7 +260,6 @@ class danboorubot(ananas.PineappleBot):
                     break
                 counter = 0
                 for post in posts:
-                    print(post)
                     if ((not any(x in post['source'].lower() for x in ['drawfag', '.png', '.jpg', '.gif']) and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted'] == False and not self.check_tags(post['tag_string'], self.blacklist_tags) and (self.check_tags(post['tag_string'], self.mandatory_tags) or len(self.mandatory_tags) == 0):
                         if post['pixiv_id'] is not None: source_url = 'https://www.pixiv.net/artworks/{0}'.format(post['pixiv_id'])
                         else: source_url = post['source']
