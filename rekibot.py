@@ -23,7 +23,9 @@ class reminder(ananas.PineappleBot):
             self.log_file = open(self.config.log_file, "a")
             self.log_to_stderr = False
         if "verbose" in self.config and (self.config.verbose.lower() in ['no', 'yes', 'very']):
-            if self.config.verbose.lower() == "yes": self.verbose_logging = True
+            if global_config.verbose.lower() == "yes": 
+                self.verbose_logging = True
+                self.verbose = False
             elif self.config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
@@ -51,7 +53,9 @@ class reminder(ananas.PineappleBot):
             self.log_file = open(global_config.log_file, "a")
             self.log_to_stderr = False
         if "verbose" in global_config and (global_config.verbose.lower() in ['no', 'yes', 'very']):
-            if global_config.verbose.lower() == "yes": self.verbose_logging = True
+            if global_config.verbose.lower() == "yes": 
+                self.verbose_logging = True
+                self.verbose = False
             elif global_config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
@@ -148,7 +152,9 @@ class danboorubot(ananas.PineappleBot):
             self.log_file = open(self.config.log_file, "a")
             self.log_to_stderr = False
         if "verbose" in self.config and (self.config.verbose.lower() in ['no', 'yes', 'very']):
-            if self.config.verbose.lower() == "yes": self.verbose_logging = True
+            if global_config.verbose.lower() == "yes": 
+                self.verbose_logging = True
+                self.verbose = False
             elif self.config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
@@ -232,7 +238,9 @@ class danboorubot(ananas.PineappleBot):
             self.log_file = open(global_config.log_file, "a")
             self.log_to_stderr = False
         if "verbose" in global_config and (global_config.verbose.lower() in ['no', 'yes', 'very']):
-            if global_config.verbose.lower() == "yes": self.verbose_logging = True
+            if global_config.verbose.lower() == "yes": 
+                self.verbose_logging = True
+                self.verbose = False
             elif global_config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
@@ -462,7 +470,9 @@ class e621bot(ananas.PineappleBot):
             self.log_file = open(self.config.log_file, "a")
             self.log_to_stderr = False
         if "verbose" in self.config and (self.config.verbose.lower() in ['no', 'yes', 'very']):
-            if self.config.verbose.lower() == "yes": self.verbose_logging = True
+            if global_config.verbose.lower() == "yes": 
+                self.verbose_logging = True
+                self.verbose = False
             elif self.config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
@@ -547,7 +557,9 @@ class e621bot(ananas.PineappleBot):
             self.log_file = open(global_config.log_file, "a")
             self.log_to_stderr = False
         if "verbose" in global_config and (global_config.verbose.lower() in ['no', 'yes', 'very']):
-            if global_config.verbose.lower() == "yes": self.verbose_logging = True
+            if global_config.verbose.lower() == "yes": 
+                self.verbose_logging = True
+                self.verbose = False
             elif global_config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
@@ -797,7 +809,9 @@ class admin_cleaner(ananas.PineappleBot):
             self.log_file = open(global_config.log_file, "a")
             self.log_to_stderr = False
         if "verbose" in global_config and (global_config.verbose.lower() in ['no', 'yes', 'very']):
-            if global_config.verbose.lower() == "yes": self.verbose_logging = True
+            if global_config.verbose.lower() == "yes": 
+                self.verbose_logging = True
+                self.verbose = False
             elif global_config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
