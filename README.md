@@ -1,7 +1,7 @@
 # rekibots
 Mastodon bots based on Ananas (https://github.com/chr-1x/ananas)
 
-Prerequisites: python 3, ananas with prereqs (from pypi), pybooru with prereqs (from pypi), sqlite 3
+Prerequisites: python 3, ananas with prereqs (from pypi), pybooru with prereqs (from pypi), sqlite 3, yippi (https://github.com/rorre/yippi)
 
 ## General information
 
