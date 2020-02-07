@@ -91,8 +91,6 @@ most).
 
 `verbose`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
 
-
-
 ### Reminder bot
 
 `log_file`: file to save logs in. If not present, will print to stderr.
@@ -104,3 +102,7 @@ most).
 `log_file`: file to save logs in. If not present, will print to stderr.
 
 `verbose`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
+
+### Global section
+
+Additionally, by adding a [global] section in your config file you can set nearly every configuration parameter (except `tags` `db_file`, `class`, `domain`, `client_id`, `client_secret`, `access_token`) globally for all bots. **In this case, tag parameters will be combined, not overwritten.**
