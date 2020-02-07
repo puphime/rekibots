@@ -22,15 +22,12 @@ class reminder(ananas.PineappleBot):
         if "log_file" in self.config and len(self.config.log_file) > 0:
             self.log_file = open(self.config.log_file, "a")
             self.log_to_stderr = False
-        else:
-            self.log_file = sys.stderr
-            self.log_to_stderr = True
         if "verbose" in self.config and (self.config.verbose.lower() in ['no', 'yes', 'very']):
             if self.config.verbose.lower() == "yes": self.verbose_logging = True
             elif self.config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
-            else:
+            elif self.config.verbose.lower() == "no":
                 self.verbose_logging = False
                 self.verbose = False
         if "admin" in self.config and len(self.config.admin) > 0: self.admin = self.config.admin
@@ -150,15 +147,12 @@ class danboorubot(ananas.PineappleBot):
         if "log_file" in self.config and len(self.config.log_file) > 0:
             self.log_file = open(self.config.log_file, "a")
             self.log_to_stderr = False
-        else:
-            self.log_file = sys.stderr
-            self.log_to_stderr = True
         if "verbose" in self.config and (self.config.verbose.lower() in ['no', 'yes', 'very']):
             if self.config.verbose.lower() == "yes": self.verbose_logging = True
             elif self.config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
-            else:
+            elif self.config.verbose.lower() == "no":
                 self.verbose_logging = False
                 self.verbose = False
         if "admin" in self.config and len(self.config.admin) > 0: self.admin = self.config.admin
@@ -178,7 +172,7 @@ class danboorubot(ananas.PineappleBot):
             elif self.config.rebuild_db == "with_migration":
                 self.rebuild_db = True
                 self.migrate_flags = True
-            else: 
+            elif self.config.rebuild_db == "no":
                 self.rebuild_db = False
                 self.migrate_flags = False
 
@@ -467,14 +461,14 @@ class e621bot(ananas.PineappleBot):
         if "log_file" in self.config and len(self.config.log_file) > 0:
             self.log_file = open(self.config.log_file, "a")
             self.log_to_stderr = False
-        else:
-            self.log_file = sys.stderr
-            self.log_to_stderr = True
         if "verbose" in self.config and (self.config.verbose.lower() in ['no', 'yes', 'very']):
             if self.config.verbose.lower() == "yes": self.verbose_logging = True
             elif self.config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
+            elif self.config.verbose.lower() == "no":
+                self.verbose_logging = False
+                self.verbose = False
         if "admin" in self.config and len(self.config.admin) > 0: self.admin = self.config.admin
         if 'db_file' in self.config and len(self.config.db_file) > 0: self.db_file = self.config.db_file
         if 'blacklist_tags' in self.config and len(self.config.blacklist_tags) > 0: self.blacklist_tags = (self.blacklist_tags + "," + self.config.blacklist_tags).strip(",")
@@ -492,7 +486,7 @@ class e621bot(ananas.PineappleBot):
             elif self.config.rebuild_db == "with_migration":
                 self.rebuild_db = True
                 self.migrate_flags = True
-            else: 
+            elif self.config.rebuild_db == "no":
                 self.rebuild_db = False
                 self.migrate_flags = False
 
@@ -775,15 +769,12 @@ class admin_cleaner(ananas.PineappleBot):
         if "log_file" in self.config and len(self.config.log_file) > 0:
             self.log_file = open(self.config.log_file, "a")
             self.log_to_stderr = False
-        else:
-            self.log_file = sys.stderr
-            self.log_to_stderr = True
         if "verbose" in self.config and (self.config.verbose.lower() in ['no', 'yes', 'very']):
             if self.config.verbose.lower() == "yes": self.verbose_logging = True
             elif self.config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
-            else:
+            elif self.config.verbose.lower() == "no":
                 self.verbose_logging = False
                 self.verbose = False
                 
