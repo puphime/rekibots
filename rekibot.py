@@ -427,7 +427,7 @@ class danboorubot(ananas.PineappleBot):
                 status_text = '{0}/posts/{1}\r\nsource: {2}'.format(self.booru_url, id, src)
                 self.mastodon.status_post(status_text, in_reply_to_id = None, media_ids = (mediadict['id'], ), sensitive = True, visibility = "unlisted", spoiler_text = None)
             except Exception as e:
-                if e.args[1] == 422: self.blacklist(id, "{0}. {1}".format(e.args[2], e.args[3]))
+                if len(e.args)>1 and e.args[1] == 422: self.blacklist(id, "{0}. {1}".format(e.args[2], e.args[3]))
                 else: self.log(fname, "Post {}/posts/{} threw exception: {}".format(self.booru_url, id, e))
                 continue
             else:
@@ -743,7 +743,7 @@ class e621bot(ananas.PineappleBot):
                 status_text = '{0}/post/show/{1}\r\nsource: {2}'.format(self.booru_url, id, src)
                 self.mastodon.status_post(status_text, in_reply_to_id = None, media_ids = (mediadict['id'], ), sensitive = True, visibility = "unlisted", spoiler_text = None)
             except Exception as e:
-                if e.args[1] == 422: self.blacklist(id, "{0}. {1}".format(e.args[2], e.args[3]))
+                if len(e.args)>1 and e.args[1] == 422: self.blacklist(id, "{0}. {1}".format(e.args[2], e.args[3]))
                 else: self.log(fname, "Post {}/post/show/{} threw exception: {}".format(self.booru_url, id, e))
                 continue
             else:
