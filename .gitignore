@@ -4,6 +4,7 @@
 *.cfg
 *.db
 *.kate-swp
+.kateproject
 .directory
 db/*
 script_logs/*
