@@ -13,26 +13,116 @@ from datetime import datetime
 from html.parser import HTMLParser
 import os
 
-class reminder(ananas.PineappleBot):
+class admin_cleaner(ananas.PineappleBot):
     @ananas.schedule(minute = "*/10")
-    def reload_config(self):
-        self.config.load(self.config._name, silent = not self.verbose_logging)
-        self.log_file = sys.stderr
-        self.load_global_config()
-        if "log_file" in self.config and len(self.config.log_file) > 0:
-            self.log_file = open(self.config.log_file, "a")
-            self.log_to_stderr = False
-        if "verbose" in self.config and (self.config.verbose.lower() in ['no', 'yes', 'very']):
-            if global_config.verbose.lower() == "yes": 
+    def reload_configs(self):
+        fname = "reload_configs"
+        self.init()
+        self.load_config(globalconf = True)
+        self.load_config()
+        if self.verbose: 
+            self.log(fname, "admin = " + str(self.admin))
+            self.log(fname, "verbose_logging = " + str(self.verbose_logging))
+            self.log(fname, "verbose = " + str(self.verbose))
+            self.log(fname, "log_file = " + str(self.log_file))
+            self.log(fname, "log_to_stderr = " + str(self.log_to_stderr))
+
+    def load_config(self, globalconf = False):
+        if globalconf:
+            config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
+            config.load("global", silent = not self.verbose_logging)
+        else: 
+            config = self.config
+            config.load(self.config._name, silent = not self.verbose_logging)
+        
+        if "admin" in config and len(config.admin) > 0: self.admin = config.admin
+        if "verbose" in config and (config.verbose.lower() in ['no', 'yes', 'very']):
+            if config.verbose.lower() == "yes": 
                 self.verbose_logging = True
                 self.verbose = False
-            elif self.config.verbose.lower() == "very": 
+            elif config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
-            elif self.config.verbose.lower() == "no":
+            elif config.verbose.lower() == "no":
                 self.verbose_logging = False
                 self.verbose = False
-        if "admin" in self.config and len(self.config.admin) > 0: self.admin = self.config.admin
+        if "log_file" in config and len(config.log_file) > 0:
+            self.log_file = open(config.log_file, "a")
+            self.log_to_stderr = False
+                
+    def log(self, id, msg):
+        if id is None:
+            id = self.__class__.__name__
+        print("[{0:%Y-%m-%d %H:%M:%S}] {1}.{2}: {3}".format(datetime.now(), self.config._name, id, str(msg)), file = self.log_file, flush = True)
+        
+    def init(self):
+        self.admin = "pup_hime@slime.global"
+        self.verbose_logging = False #the bot's verbosity
+        self.verbose = False #ananas' own verbosity  
+        self.log_file = sys.stderr
+        self.log_to_stderr = True
+     
+    def start(self):
+        fname = "start"
+        self.reload_configs()
+        self.me = self.mastodon.account_verify_credentials()
+        self.last_checked_post = self.mastodon.timeline_home()[0]
+        self.log(fname, "Bot started.")
+
+    @ananas.schedule(minute = 0)
+    def check_posts(self):
+        fname = "check_posts"
+        try:
+            posts = self.mastodon.account_statuses(self.me['id'], since_id = self.last_checked_post)
+            if len(posts) > 0:
+                for post in posts:
+                    if "delete this!" in post['content']:
+                        self.mastodon.status_delete(post['id'])
+                        if self.verbose_logging: self.log(fname, "Found deleter post id {}.".format(post['id']))
+                    if "announce! " in post['content']:
+                        self.mastodon.status_delete(post['id'])
+                        if self.verbose_logging: self.log(fname, "Found announcer post id {}.".format(post['id']))
+                self.last_checked_post = posts[0]
+        except Exception as e:
+            self.log(fname, e)
+            return
+
+class reminder(ananas.PineappleBot):
+    @ananas.schedule(minute = "*/10")
+    def reload_configs(self):
+        fname = "reload_configs"
+        self.init()
+        self.load_config(globalconf = True)
+        self.load_config()
+        if self.verbose: 
+            self.log(fname, "admin = " + str(self.admin))
+            self.log(fname, "verbose_logging = " + str(self.verbose_logging))
+            self.log(fname, "verbose = " + str(self.verbose))
+            self.log(fname, "log_file = " + str(self.log_file))
+            self.log(fname, "log_to_stderr = " + str(self.log_to_stderr))
+
+    def load_config(self,globalconf=False):
+        if globalconf:
+            config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
+            config.load("global", silent = not self.verbose_logging)
+        else: 
+            config = self.config
+            config.load(self.config._name, silent = not self.verbose_logging)
+        
+        if "admin" in config and len(config.admin) > 0: self.admin = config.admin
+        if "verbose" in config and (config.verbose.lower() in ['no', 'yes', 'very']):
+            if config.verbose.lower() == "yes": 
+                self.verbose_logging = True
+                self.verbose = False
+            elif config.verbose.lower() == "very": 
+                self.verbose_logging = True
+                self.verbose = True
+            elif config.verbose.lower() == "no":
+                self.verbose_logging = False
+                self.verbose = False
+        if "log_file" in config and len(config.log_file) > 0:
+            self.log_file = open(config.log_file, "a")
+            self.log_to_stderr = False
 
     def log(self, id, msg):
         if id is None:
@@ -45,25 +135,10 @@ class reminder(ananas.PineappleBot):
         self.verbose = False #ananas' own verbosity
         self.log_file = sys.stderr
         self.log_to_stderr = True
-        
-    def load_global_config(self):
-        global_config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
-        global_config.load("global", silent = not self.verbose_logging)
-        if "log_file" in global_config and len(global_config.log_file) > 0:
-            self.log_file = open(global_config.log_file, "a")
-            self.log_to_stderr = False
-        if "verbose" in global_config and (global_config.verbose.lower() in ['no', 'yes', 'very']):
-            if global_config.verbose.lower() == "yes": 
-                self.verbose_logging = True
-                self.verbose = False
-            elif global_config.verbose.lower() == "very": 
-                self.verbose_logging = True
-                self.verbose = True
-        if "admin" in global_config and len(global_config.admin) > 0: self.admin = global_config.admin
     
     def start(self):
         fname = "start"
-        self.reload_config()
+        self.reload_configs()
         self.me = self.mastodon.account_verify_credentials()
         self.last_checked_post = self.mastodon.timeline_home()[0]
         self.h = HTMLParser()
@@ -141,67 +216,95 @@ class reminder(ananas.PineappleBot):
         
 class danboorubot(ananas.PineappleBot):
     @ananas.schedule(minute = "*/10")
-    def reload_config(self):
-        self.config.load(self.config._name, silent = not self.verbose_logging)
-        self.tags = self.config.tags.split(',')
-        self.db_file = "{0}.db".format(self.config._name)
-        self.log_file = sys.stderr
-        self.log_to_stderr = True
-        self.load_global_config()
-        if "log_file" in self.config and len(self.config.log_file) > 0:
-            self.log_file = open(self.config.log_file, "a")
+    def reload_configs(self):
+        fname = "reload_configs"
+        self.init()
+        self.blacklist_tags = ""
+        self.mandatory_tags = ""
+        self.skip_tags = ""
+        self.load_config(globalconf = True)
+        self.load_config()
+        if self.verbose: 
+            self.log(fname, "tags = " + str(self.tags))
+            self.log(fname, "log_file = " + str(self.log_file))
+            self.log(fname, "log_to_stderr = " + str(self.log_to_stderr))
+            self.log(fname, "verbose_logging = " + str(self.verbose_logging))
+            self.log(fname, "verbose = " + str(self.verbose))
+            self.log(fname, "admin = " + str(self.admin))
+            self.log(fname, "booru_url = " + str(self.booru_url))
+            self.log(fname, "db_file = " + str(self.db_file))
+            self.log(fname, "blacklist_tags = " + str(self.blacklist_tags))
+            self.log(fname, "mandatory_tags = " + str(self.mandatory_tags))
+            self.log(fname, "rating = " + str(self.rating))
+            self.log(fname, "skip_tags = " + str(self.skip_tags))
+            self.log(fname, "skip_chance = " + str(self.skip_chance))
+            self.log(fname, "max_page = " + str(self.max_page))
+            self.log(fname, "max_badpages = " + str(self.max_badpages))
+            self.log(fname, "queue_length = " + str(self.queue_length))
+            self.log(fname, "post_every = " + str(self.post_every))
+            self.log(fname, "offset = " + str(self.offset))
+            self.log(fname, "rebuild_db = " + str(self.rebuild_db))
+            self.log(fname, "migrate_flags = " + str(self.migrate_flags))
+        
+    
+    def load_config(self,globalconf = False):
+        if globalconf:
+            config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
+            config.load("global", silent = not self.verbose_logging)
+        else: 
+            config = self.config
+            config.load(self.config._name, silent = not self.verbose_logging)
+        
+        if 'tags' in config and len(config.tags) > 0: self.tags = config.tags.split(',')
+        if "log_file" in config and len(config.log_file) > 0:
+            self.log_file = open(config.log_file, "a")
             self.log_to_stderr = False
-        if "verbose" in self.config and (self.config.verbose.lower() in ['no', 'yes', 'very']):
-            if global_config.verbose.lower() == "yes": 
+        if "verbose" in config and (config.verbose.lower() in ['no', 'yes', 'very']):
+            if config.verbose.lower() == "yes":
                 self.verbose_logging = True
                 self.verbose = False
-            elif self.config.verbose.lower() == "very": 
+            elif config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
-            elif self.config.verbose.lower() == "no":
+            elif config.verbose.lower() == "no":
                 self.verbose_logging = False
                 self.verbose = False
-        if "admin" in self.config and len(self.config.admin) > 0: self.admin = self.config.admin
-        if "booru_url" in self.config and len(self.config.booru_url) > 0: self.booru_url = self.config.booru_url
-        if 'db_file' in self.config and len(self.config.db_file) > 0: self.db_file = self.config.db_file
-        if 'blacklist_tags' in self.config and len(self.config.blacklist_tags) > 0: self.blacklist_tags = (self.blacklist_tags + "," + self.config.blacklist_tags).strip(",")
-        if 'mandatory_tags' in self.config and len(self.config.mandatory_tags) > 0: self.mandatory_tags = (self.mandatory_tags + "," + self.config.mandatory_tags).strip(",")
-        if 'skip_tags' in self.config and len(self.config.skip_tags) > 0: self.skip_tags = (self.skip_tags + "," + self.config.skip_tags).strip(",")
-        if 'skip_chance' in self.config and self.config.skip_chance.isdigit(): self.skip_chance = int(self.config.skip_chance)
-        if 'max_page' in self.config and self.config.max_page.isdigit(): self.max_page = int(self.config.max_page)
-        if 'max_badpages' in self.config and self.config.max_badpages.isdigit(): self.max_badpages = int(self.config.max_badpages)
-        if 'queue_length' in self.config and self.config.queue_length.isdigit(): self.queue_length = int(self.config.queue_length)
-        if 'post_every' in self.config and self.config.post_every.isdigit(): self.post_every = int(self.config.post_every)
-        if 'offset' in self.config and self.config.offset.isdigit(): self.offset = int(self.config.offset)
-        if 'rebuild_db' in self.config and self.config.rebuild_db in ['no', 'yes', 'with_migration']:
-            if self.config.rebuild_db == "yes": self.rebuild_db = True
-            elif self.config.rebuild_db == "with_migration":
+        if "admin" in config and len(config.admin) > 0: self.admin = config.admin
+        if "booru_url" in config and len(config.booru_url) > 0: self.booru_url = config.booru_url
+        if 'db_file' in config and len(config.db_file) > 0: self.db_file = config.db_file
+        if 'blacklist_tags' in config and len(config.blacklist_tags) > 0: self.blacklist_tags = (self.blacklist_tags + "," + config.blacklist_tags).strip(",")
+        if 'mandatory_tags' in config and len(config.mandatory_tags) > 0: self.mandatory_tags = (self.mandatory_tags + "," + config.mandatory_tags).strip(",")
+        if 'skip_tags' in config and len(config.skip_tags) > 0: self.skip_tags = (self.skip_tags + "," + config.skip_tags).strip(",")
+        if 'rating' in config and len(config.rating) > 0: self.rating = config.rating
+        if 'skip_chance' in config and config.skip_chance.isdigit(): self.skip_chance = int(config.skip_chance)
+        if 'max_page' in config and config.max_page.isdigit(): self.max_page = int(config.max_page)
+        if 'max_badpages' in config and config.max_badpages.isdigit(): self.max_badpages = int(config.max_badpages)
+        if 'queue_length' in config and config.queue_length.isdigit(): self.queue_length = int(config.queue_length)
+        if 'post_every' in config and config.post_every.isdigit(): self.post_every = int(config.post_every)
+        if 'offset' in config and config.offset.isdigit(): self.offset = int(config.offset)
+        if 'rebuild_db' in config and config.rebuild_db in ['no', 'yes', 'with_migration']:
+            if config.rebuild_db == "yes": 
+                self.rebuild_db = True
+                self.migrate_flags = False
+            elif config.rebuild_db == "with_migration":
                 self.rebuild_db = True
                 self.migrate_flags = True
-            elif self.config.rebuild_db == "no":
+            elif config.rebuild_db == "no":
                 self.rebuild_db = False
                 self.migrate_flags = False
-
+                
     def log(self, id, msg):
         if id is None:
             id = self.__class__.__name__
         print("[{0:%Y-%m-%d %H:%M:%S}] {1}.{2}: {3}".format(datetime.now(), self.config._name, id, str(msg)), file = self.log_file, flush = True)
        
     def init(self):
-        self.mime = magic.Magic(mime = True)
-        self.proxy = urllib.request.ProxyHandler({})
-        self.opener = urllib.request.build_opener(self.proxy)
-        self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
-        urllib.request.install_opener(self.opener)
-        self.h = HTMLParser()
-        
         self.admin = "pup_hime@slime.global"
         self.verbose_logging = False #the bot's verbosity
         self.verbose = False #ananas' own verbosity
         self.log_file = sys.stderr
         self.log_to_stderr = True
         
-        self.queue = []
         self.blacklist_tags = ""
         self.mandatory_tags = ""
         self.skip_tags = ""
@@ -213,12 +316,12 @@ class danboorubot(ananas.PineappleBot):
         self.post_every = 30
         self.offset = 0
         self.tags = []
-        self.db_file = ""
         
         self.rebuild_db = False
         self.migrate_flags = False
         
         self.booru_url = 'https://danbooru.donmai.us'
+        self.rating = "s"
         
         self.create_table_sql = "create table if not exists images (danbooru_id integer primary key, url_danbooru text, url_source text, tags text, posted integer default 0, blacklisted integer default 0, UNIQUE(url_danbooru), UNIQUE(url_source));"
         self.insert_sql = "insert into images(danbooru_id, url_danbooru, url_source, tags) values(?, ?, ?, ?);"
@@ -230,40 +333,18 @@ class danboorubot(ananas.PineappleBot):
         self.migrate_db_sql2 = "update images set blacklisted = 1 where danbooru_id in (select danbooru_id from images_old where blacklisted = 1);"
         self.migrate_db_sql3 = "update images set posted = 1 where danbooru_id in (select danbooru_id from images_old where posted = 1);"
         self.migrate_db_sql4 = "drop table images_old;"
-    
-    def load_global_config(self):
-        global_config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
-        global_config.load("global", silent = not self.verbose_logging)
-        if "log_file" in global_config and len(global_config.log_file) > 0:
-            self.log_file = open(global_config.log_file, "a")
-            self.log_to_stderr = False
-        if "verbose" in global_config and (global_config.verbose.lower() in ['no', 'yes', 'very']):
-            if global_config.verbose.lower() == "yes": 
-                self.verbose_logging = True
-                self.verbose = False
-            elif global_config.verbose.lower() == "very": 
-                self.verbose_logging = True
-                self.verbose = True
-        if "admin" in global_config and len(global_config.admin) > 0: self.admin = global_config.admin
-        if "booru_url" in global_config and len(global_config.booru_url) > 0: self.booru_url = global_config.booru_url
-        if 'blacklist_tags' in global_config and len(global_config.blacklist_tags) > 0: self.blacklist_tags = global_config.blacklist_tags
-        if 'mandatory_tags' in global_config and len(global_config.mandatory_tags) > 0: self.mandatory_tags = global_config.mandatory_tags
-        if 'skip_tags' in global_config and len(global_config.skip_tags) > 0: self.skip_tags = global_config.skip_tags
-        if 'skip_chance' in global_config and global_config.skip_chance.isdigit(): self.skip_chance = int(global_config.skip_chance)
-        if 'max_page' in global_config and global_config.max_page.isdigit(): self.max_page = int(global_config.max_page)
-        if 'max_badpages' in global_config and global_config.max_badpages.isdigit(): self.max_badpages = int(global_config.max_badpages)
-        if 'queue_length' in global_config and global_config.queue_length.isdigit(): self.queue_length = int(global_config.queue_length)
-        if 'post_every' in global_config and global_config.post_every.isdigit(): self.post_every = int(global_config.post_every)
-        if 'offset' in global_config and global_config.offset.isdigit(): self.offset = int(global_config.offset)
-        if 'rebuild_db' in global_config and global_config.rebuild_db in ['no', 'yes', 'with_migration']:
-            if global_config.rebuild_db == "yes": self.rebuild_db = True
-            elif global_config.rebuild_db == "with_migration":
-                self.rebuild_db = True
-                self.migrate_flags = True
                 
     def start(self):   
         fname = "start"
-        self.reload_config()
+        self.mime = magic.Magic(mime = True)
+        self.proxy = urllib.request.ProxyHandler({})
+        self.opener = urllib.request.build_opener(self.proxy)
+        self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
+        urllib.request.install_opener(self.opener)
+        self.h = HTMLParser()
+        
+        self.db_file = "{}.db".format(self.config._name)
+        self.reload_configs()
         
         self.client = Danbooru(site_url = self.booru_url)
         
@@ -336,7 +417,7 @@ class danboorubot(ananas.PineappleBot):
                 counter = 0
                 for post in posts:
                     if ((not any(x in post['source'].lower() for x in ['drawfag', '.png', '.jpg', '.gif']) and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted'] == False and not self.check_tags(post['tag_string'], self.blacklist_tags) and (self.check_tags(post['tag_string'], self.mandatory_tags) or len(self.mandatory_tags) == 0):
-                        if post['pixiv_id'] is not None: source_url = 'https://www.pixiv.net/artworks/{0}'.format(post['pixiv_id'])
+                        if post['pixiv_id'] is not None: source_url = 'https://www.pixiv.net/artworks/{}'.format(post['pixiv_id'])
                         else: source_url = post['source']
                         if 'file_url' in post: danbooru_url = post['file_url']
                         elif 'large_file_url' in post: danbooru_url = post['large_file_url']
@@ -424,10 +505,10 @@ class danboorubot(ananas.PineappleBot):
             try:
                 saved_file_path = urllib.request.urlretrieve(url)[0]
                 with open(saved_file_path, 'rb') as file: mediadict = self.mastodon.media_post(file.read(), self.mime.from_file(saved_file_path))
-                status_text = '{0}/posts/{1}\r\nsource: {2}'.format(self.booru_url, id, src)
+                status_text = '{}/posts/{}\r\nsource: {}'.format(self.booru_url, id, src)
                 self.mastodon.status_post(status_text, in_reply_to_id = None, media_ids = (mediadict['id'], ), sensitive = True, visibility = "unlisted", spoiler_text = None)
             except Exception as e:
-                if len(e.args)>1 and e.args[1] == 422: self.blacklist(id, "{0}. {1}".format(e.args[2], e.args[3]))
+                if len(e.args)>1 and e.args[1] == 422: self.blacklist(id, "{}. {}".format(e.args[2], e.args[3]))
                 else: self.log(fname, "Post {}/posts/{} threw exception: {}".format(self.booru_url, id, e))
                 continue
             else:
@@ -459,67 +540,95 @@ class danboorubot(ananas.PineappleBot):
 
 class e621bot(ananas.PineappleBot):
     @ananas.schedule(minute = "*/10")
-    def reload_config(self):
-        self.config.load(self.config._name, silent = not self.verbose_logging)
-        self.tags = self.config.tags.split(',')
-        self.db_file = "{0}.db".format(self.config._name)
-        self.log_file = sys.stderr
-        self.log_to_stderr = True
-        self.load_global_config()
-        if "log_file" in self.config and len(self.config.log_file) > 0:
-            self.log_file = open(self.config.log_file, "a")
-            self.log_to_stderr = False
-        if "verbose" in self.config and (self.config.verbose.lower() in ['no', 'yes', 'very']):
-            if global_config.verbose.lower() == "yes": 
+    def reload_configs(self):
+        fname = "reload_configs"
+        self.init()
+        self.blacklist_tags = ""
+        self.mandatory_tags = ""
+        self.skip_tags = ""
+        self.load_config(globalconf = True)
+        self.load_config()
+        if self.verbose: 
+            self.log(fname, "tags = " + str(self.tags))
+            self.log(fname, "log_file = " + str(self.log_file))
+            self.log(fname, "log_to_stderr = " + str(self.log_to_stderr))
+            self.log(fname, "verbose_logging = " + str(self.verbose_logging))
+            self.log(fname, "verbose = " + str(self.verbose))
+            self.log(fname, "admin = " + str(self.admin))
+            self.log(fname, "booru_url = " + str(self.booru_url))
+            self.log(fname, "db_file = " + str(self.db_file))
+            self.log(fname, "blacklist_tags = " + str(self.blacklist_tags))
+            self.log(fname, "mandatory_tags = " + str(self.mandatory_tags))
+            self.log(fname, "rating = " + str(self.rating))
+            self.log(fname, "skip_tags = " + str(self.skip_tags))
+            self.log(fname, "skip_chance = " + str(self.skip_chance))
+            self.log(fname, "max_page = " + str(self.max_page))
+            self.log(fname, "max_badpages = " + str(self.max_badpages))
+            self.log(fname, "queue_length = " + str(self.queue_length))
+            self.log(fname, "post_every = " + str(self.post_every))
+            self.log(fname, "offset = " + str(self.offset))
+            self.log(fname, "rebuild_db = " + str(self.rebuild_db))
+            self.log(fname, "migrate_flags = " + str(self.migrate_flags))
+    
+    def load_config(self,globalconf = False):
+        if globalconf:
+            config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
+            config.load("global", silent = not self.verbose_logging)
+        else: 
+            config = self.config
+            config.load(self.config._name, silent = not self.verbose_logging)
+        
+        if "admin" in config and len(config.admin) > 0: self.admin = config.admin
+        if "verbose" in config and (config.verbose.lower() in ['no', 'yes', 'very']):
+            if config.verbose.lower() == "yes":
                 self.verbose_logging = True
                 self.verbose = False
-            elif self.config.verbose.lower() == "very": 
+            elif config.verbose.lower() == "very": 
                 self.verbose_logging = True
                 self.verbose = True
-            elif self.config.verbose.lower() == "no":
+            elif config.verbose.lower() == "no":
                 self.verbose_logging = False
                 self.verbose = False
-        if "admin" in self.config and len(self.config.admin) > 0: self.admin = self.config.admin
-        if 'db_file' in self.config and len(self.config.db_file) > 0: self.db_file = self.config.db_file
-        if 'blacklist_tags' in self.config and len(self.config.blacklist_tags) > 0: self.blacklist_tags = (self.blacklist_tags + "," + self.config.blacklist_tags).strip(",")
-        if 'mandatory_tags' in self.config and len(self.config.mandatory_tags) > 0: self.mandatory_tags = (self.mandatory_tags + "," + self.config.mandatory_tags).strip(",")
-        if 'skip_tags' in self.config and len(self.config.skip_tags) > 0: self.skip_tags = (self.skip_tags + "," + self.config.skip_tags).strip(",")
-        if 'rating' in self.config and len(self.config.rating) > 0: self.rating = self.config.rating
-        if 'skip_chance' in self.config and self.config.skip_chance.isdigit(): self.skip_chance = int(self.config.skip_chance)
-        if 'max_page' in self.config and self.config.max_page.isdigit(): self.max_page = int(self.config.max_page)
-        if 'max_badpages' in self.config and self.config.max_badpages.isdigit(): self.max_badpages = int(self.config.max_badpages)
-        if 'queue_length' in self.config and self.config.queue_length.isdigit(): self.queue_length = int(self.config.queue_length)
-        if 'post_every' in self.config and self.config.post_every.isdigit(): self.post_every = int(self.config.post_every)
-        if 'offset' in self.config and self.config.offset.isdigit(): self.offset = int(self.config.offset)
-        if 'rebuild_db' in self.config and self.config.rebuild_db in ['no', 'yes', 'with_migration']:
-            if self.config.rebuild_db == "yes": self.rebuild_db = True
-            elif self.config.rebuild_db == "with_migration":
+        if "log_file" in config and len(config.log_file) > 0:
+            self.log_file = open(config.log_file, "a")
+            self.log_to_stderr = False
+        if 'tags' in config and len(config.tags) > 0: self.tags = config.tags.split(',')
+        if 'blacklist_tags' in config and len(config.blacklist_tags) > 0: self.blacklist_tags = (self.blacklist_tags + "," + config.blacklist_tags).strip(",")
+        if 'mandatory_tags' in config and len(config.mandatory_tags) > 0: self.mandatory_tags = (self.mandatory_tags + "," + config.mandatory_tags).strip(",")
+        if 'skip_tags' in config and len(config.skip_tags) > 0: self.skip_tags = (self.skip_tags + "," + config.skip_tags).strip(",")
+        if 'skip_chance' in config and config.skip_chance.isdigit(): self.skip_chance = int(config.skip_chance)
+        if 'max_page' in config and config.max_page.isdigit(): self.max_page = int(config.max_page)
+        if 'max_badpages' in config and config.max_badpages.isdigit(): self.max_badpages = int(config.max_badpages)
+        if 'queue_length' in config and config.queue_length.isdigit(): self.queue_length = int(config.queue_length)
+        if 'post_every' in config and config.post_every.isdigit(): self.post_every = int(config.post_every)
+        if 'offset' in config and config.offset.isdigit(): self.offset = int(config.offset)
+        if 'db_file' in config and len(config.db_file) > 0: self.db_file = config.db_file
+        if 'rebuild_db' in config and config.rebuild_db in ['no', 'yes', 'with_migration']:
+            if config.rebuild_db == "yes": 
+                self.rebuild_db = True
+                self.migrate_flags = False
+            elif config.rebuild_db == "with_migration":
                 self.rebuild_db = True
                 self.migrate_flags = True
-            elif self.config.rebuild_db == "no":
+            elif config.rebuild_db == "no":
                 self.rebuild_db = False
                 self.migrate_flags = False
-
+        if "booru_url" in config and len(config.booru_url) > 0: self.booru_url = config.booru_url
+        if 'rating' in config and len(config.rating) > 0: self.rating = config.rating
+                
     def log(self, id, msg):
         if id is None:
             id = self.__class__.__name__
         print("[{0:%Y-%m-%d %H:%M:%S}] {1}.{2}: {3}".format(datetime.now(), self.config._name, id, str(msg)), file = self.log_file, flush = True)
        
-    def init(self):
-        self.mime = magic.Magic(mime = True)
-        self.proxy = urllib.request.ProxyHandler({})
-        self.opener = urllib.request.build_opener(self.proxy)
-        self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
-        urllib.request.install_opener(self.opener)
-        self.h = HTMLParser()
-        
+    def init(self):     
         self.admin = "pup_hime@slime.global"
         self.verbose_logging = False #the bot's verbosity
         self.verbose = False #ananas' own verbosity
         self.log_file = sys.stderr
         self.log_to_stderr = True
         
-        self.queue = []
+        self.tags = []
         self.blacklist_tags = ""
         self.mandatory_tags = ""
         self.skip_tags = ""
@@ -530,9 +639,8 @@ class e621bot(ananas.PineappleBot):
         self.queue_length = 5
         self.post_every = 30
         self.offset = 0
-        self.tags = []
-        self.db_file = ""
         
+        self.db_file = ""
         self.rebuild_db = False
         self.migrate_flags = False
         
@@ -549,43 +657,18 @@ class e621bot(ananas.PineappleBot):
         self.migrate_db_sql2 = "update images set blacklisted = 1 where danbooru_id in (select danbooru_id from images_old where blacklisted = 1);"
         self.migrate_db_sql3 = "update images set posted = 1 where danbooru_id in (select danbooru_id from images_old where posted = 1);"
         self.migrate_db_sql4 = "drop table images_old;"
-    
-    def load_global_config(self):
-        global_config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
-        global_config.load("global", silent = not self.verbose_logging)
-        if "log_file" in global_config and len(global_config.log_file) > 0:
-            self.log_file = open(global_config.log_file, "a")
-            self.log_to_stderr = False
-        if "verbose" in global_config and (global_config.verbose.lower() in ['no', 'yes', 'very']):
-            if global_config.verbose.lower() == "yes": 
-                self.verbose_logging = True
-                self.verbose = False
-            elif global_config.verbose.lower() == "very": 
-                self.verbose_logging = True
-                self.verbose = True
-            else:
-                self.verbose_logging = False
-                self.verbose = False
-        if "admin" in global_config and len(global_config.admin) > 0: self.admin = global_config.admin
-        if 'blacklist_tags' in global_config and len(global_config.blacklist_tags) > 0: self.blacklist_tags = global_config.blacklist_tags
-        if 'mandatory_tags' in global_config and len(global_config.mandatory_tags) > 0: self.mandatory_tags = global_config.mandatory_tags
-        if 'skip_tags' in global_config and len(global_config.skip_tags) > 0: self.skip_tags = global_config.skip_tags
-        if 'skip_chance' in global_config and global_config.skip_chance.isdigit(): self.skip_chance = int(global_config.skip_chance)
-        if 'rating' in global_config and len(global_config.rating) > 0: self.rating = global_config.rating
-        if 'max_page' in global_config and global_config.max_page.isdigit(): self.max_page = int(global_config.max_page)
-        if 'max_badpages' in global_config and global_config.max_badpages.isdigit(): self.max_badpages = int(global_config.max_badpages)
-        if 'queue_length' in global_config and global_config.queue_length.isdigit(): self.queue_length = int(global_config.queue_length)
-        if 'post_every' in global_config and global_config.post_every.isdigit(): self.post_every = int(global_config.post_every)
-        if 'offset' in global_config and global_config.offset.isdigit(): self.offset = int(global_config.offset)
-        if 'rebuild_db' in global_config and global_config.rebuild_db in ['no', 'yes', 'with_migration']:
-            if global_config.rebuild_db == "yes": self.rebuild_db = True
-            elif global_config.rebuild_db == "with_migration":
-                self.rebuild_db = True
-                self.migrate_flags = True
-               
+
     def start(self):   
         fname = "start"
-        self.reload_config()
+        self.mime = magic.Magic(mime = True)
+        self.proxy = urllib.request.ProxyHandler({})
+        self.opener = urllib.request.build_opener(self.proxy)
+        self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
+        urllib.request.install_opener(self.opener)
+        self.h = HTMLParser()
+        
+        self.db_file = "{}.db".format(self.config._name)
+        self.reload_configs()
         
         conn = sqlite3.connect(self.db_file)
         cur = conn.cursor()
@@ -740,10 +823,10 @@ class e621bot(ananas.PineappleBot):
             try:
                 saved_file_path = urllib.request.urlretrieve(url)[0]
                 with open(saved_file_path, 'rb') as file: mediadict = self.mastodon.media_post(file.read(), self.mime.from_file(saved_file_path))
-                status_text = '{0}/post/show/{1}\r\nsource: {2}'.format(self.booru_url, id, src)
+                status_text = '{}/post/show/{}\r\nsource: {}'.format(self.booru_url, id, src)
                 self.mastodon.status_post(status_text, in_reply_to_id = None, media_ids = (mediadict['id'], ), sensitive = True, visibility = "unlisted", spoiler_text = None)
             except Exception as e:
-                if len(e.args)>1 and e.args[1] == 422: self.blacklist(id, "{0}. {1}".format(e.args[2], e.args[3]))
+                if len(e.args)>1 and e.args[1] == 422: self.blacklist(id, "{}. {}".format(e.args[2], e.args[3]))
                 else: self.log(fname, "Post {}/post/show/{} threw exception: {}".format(self.booru_url, id, e))
                 continue
             else:
@@ -769,74 +852,6 @@ class e621bot(ananas.PineappleBot):
                     text = re.sub('<[^<]+?>', '', status['content'])
                     text = self.h.unescape(text)
                     self.mastodon.status_post(text.split('announce! ')[-1], in_reply_to_id = None, media_ids = None, sensitive = False, visibility = "unlisted", spoiler_text = None)
-        except Exception as e:
-            self.log(fname, e)
-            return
-
-class admin_cleaner(ananas.PineappleBot):
-    @ananas.schedule(minute = "*/10")
-    def reload_config(self):
-        self.config.load(self.config._name, silent = not self.verbose_logging)
-        self.load_global_config()
-        if "log_file" in self.config and len(self.config.log_file) > 0:
-            self.log_file = open(self.config.log_file, "a")
-            self.log_to_stderr = False
-        if "verbose" in self.config and (self.config.verbose.lower() in ['no', 'yes', 'very']):
-            if self.config.verbose.lower() == "yes": self.verbose_logging = True
-            elif self.config.verbose.lower() == "very": 
-                self.verbose_logging = True
-                self.verbose = True
-            elif self.config.verbose.lower() == "no":
-                self.verbose_logging = False
-                self.verbose = False
-                
-    def log(self, id, msg):
-        if id is None:
-            id = self.__class__.__name__
-        print("[{0:%Y-%m-%d %H:%M:%S}] {1}.{2}: {3}".format(datetime.now(), self.config._name, id, str(msg)), file = self.log_file, flush = True)
-        
-    def init(self):
-        self.admin = "pup_hime@slime.global"
-        self.verbose_logging = False #the bot's verbosity
-        self.verbose = False #ananas' own verbosity  
-        self.log_file = sys.stderr
-        self.log_to_stderr = True
-        
-    def load_global_config(self):
-        global_config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
-        global_config.load("global", silent = not self.verbose_logging)
-        if "log_file" in global_config and len(global_config.log_file) > 0:
-            self.log_file = open(global_config.log_file, "a")
-            self.log_to_stderr = False
-        if "verbose" in global_config and (global_config.verbose.lower() in ['no', 'yes', 'very']):
-            if global_config.verbose.lower() == "yes": 
-                self.verbose_logging = True
-                self.verbose = False
-            elif global_config.verbose.lower() == "very": 
-                self.verbose_logging = True
-                self.verbose = True
-                
-    def start(self):
-        fname = "start"
-        self.reload_config()
-        self.me = self.mastodon.account_verify_credentials()
-        self.last_checked_post = self.mastodon.timeline_home()[0]
-        self.log(fname, "Bot started.")
-
-    @ananas.schedule(minute = 0)
-    def check_posts(self):
-        fname = "check_posts"
-        try:
-            posts = self.mastodon.account_statuses(self.me['id'], since_id = self.last_checked_post)
-            if len(posts) > 0:
-                for post in posts:
-                    if "delete this!" in post['content']:
-                        self.mastodon.status_delete(post['id'])
-                        if self.verbose_logging: self.log(fname, "Found deleter post id {}.".format(post['id']))
-                    if "announce! " in post['content']:
-                        self.mastodon.status_delete(post['id'])
-                        if self.verbose_logging: self.log(fname, "Found announcer post id {}.".format(post['id']))
-                self.last_checked_post = posts[0]
         except Exception as e:
             self.log(fname, e)
             return
