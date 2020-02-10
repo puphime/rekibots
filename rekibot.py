@@ -219,9 +219,6 @@ class danboorubot(ananas.PineappleBot):
     def reload_configs(self):
         fname = "reload_configs"
         self.init()
-        self.blacklist_tags = ""
-        self.mandatory_tags = ""
-        self.skip_tags = ""
         self.load_config(globalconf = True)
         self.load_config()
         if self.verbose: 
@@ -342,6 +339,8 @@ class danboorubot(ananas.PineappleBot):
         self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
         urllib.request.install_opener(self.opener)
         self.h = HTMLParser()
+        
+        self.queue = []
         
         self.db_file = "{}.db".format(self.config._name)
         self.reload_configs()
@@ -543,9 +542,6 @@ class e621bot(ananas.PineappleBot):
     def reload_configs(self):
         fname = "reload_configs"
         self.init()
-        self.blacklist_tags = ""
-        self.mandatory_tags = ""
-        self.skip_tags = ""
         self.load_config(globalconf = True)
         self.load_config()
         if self.verbose: 
@@ -666,6 +662,8 @@ class e621bot(ananas.PineappleBot):
         self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
         urllib.request.install_opener(self.opener)
         self.h = HTMLParser()
+        
+        self.queue = []
         
         self.db_file = "{}.db".format(self.config._name)
         self.reload_configs()
