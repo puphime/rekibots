@@ -16,7 +16,7 @@ import os
 class reminder(ananas.PineappleBot):
     @ananas.schedule(minute = "*/10")
     def reload_config(self):
-        self.config.load(self.config._name)
+        self.config.load(self.config._name, silent = not self.verbose_logging)
         self.log_file = sys.stderr
         self.load_global_config()
         if "log_file" in self.config and len(self.config.log_file) > 0:
@@ -48,7 +48,7 @@ class reminder(ananas.PineappleBot):
         
     def load_global_config(self):
         global_config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
-        global_config.load("global")
+        global_config.load("global", silent = not self.verbose_logging)
         if "log_file" in global_config and len(global_config.log_file) > 0:
             self.log_file = open(global_config.log_file, "a")
             self.log_to_stderr = False
@@ -142,7 +142,7 @@ class reminder(ananas.PineappleBot):
 class danboorubot(ananas.PineappleBot):
     @ananas.schedule(minute = "*/10")
     def reload_config(self):
-        self.config.load(self.config._name)
+        self.config.load(self.config._name, silent = not self.verbose_logging)
         self.tags = self.config.tags.split(',')
         self.db_file = "{0}.db".format(self.config._name)
         self.log_file = sys.stderr
@@ -233,7 +233,7 @@ class danboorubot(ananas.PineappleBot):
     
     def load_global_config(self):
         global_config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
-        global_config.load("global")
+        global_config.load("global", silent = not self.verbose_logging)
         if "log_file" in global_config and len(global_config.log_file) > 0:
             self.log_file = open(global_config.log_file, "a")
             self.log_to_stderr = False
@@ -460,7 +460,7 @@ class danboorubot(ananas.PineappleBot):
 class e621bot(ananas.PineappleBot):
     @ananas.schedule(minute = "*/10")
     def reload_config(self):
-        self.config.load(self.config._name)
+        self.config.load(self.config._name, silent = not self.verbose_logging)
         self.tags = self.config.tags.split(',')
         self.db_file = "{0}.db".format(self.config._name)
         self.log_file = sys.stderr
@@ -552,7 +552,7 @@ class e621bot(ananas.PineappleBot):
     
     def load_global_config(self):
         global_config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
-        global_config.load("global")
+        global_config.load("global", silent = not self.verbose_logging)
         if "log_file" in global_config and len(global_config.log_file) > 0:
             self.log_file = open(global_config.log_file, "a")
             self.log_to_stderr = False
@@ -776,7 +776,7 @@ class e621bot(ananas.PineappleBot):
 class admin_cleaner(ananas.PineappleBot):
     @ananas.schedule(minute = "*/10")
     def reload_config(self):
-        self.config.load(self.config._name)
+        self.config.load(self.config._name, silent = not self.verbose_logging)
         self.load_global_config()
         if "log_file" in self.config and len(self.config.log_file) > 0:
             self.log_file = open(self.config.log_file, "a")
@@ -804,7 +804,7 @@ class admin_cleaner(ananas.PineappleBot):
         
     def load_global_config(self):
         global_config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
-        global_config.load("global")
+        global_config.load("global", silent = not self.verbose_logging)
         if "log_file" in global_config and len(global_config.log_file) > 0:
             self.log_file = open(global_config.log_file, "a")
             self.log_to_stderr = False
