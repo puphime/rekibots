@@ -243,6 +243,8 @@ class imagebot(ananas.PineappleBot):
             self.log(fname, "offset = " + str(self.offset))
             self.log(fname, "rebuild_db = " + str(self.rebuild_db))
             self.log(fname, "migrate_flags = " + str(self.migrate_flags))
+        if self.rebuild_db:
+            self.build_db()
     
     def load_config(self,globalconf = False):
         if globalconf:
@@ -333,25 +335,8 @@ class imagebot(ananas.PineappleBot):
         self.migrate_db_sql3 = "update images set posted = 1 where danbooru_id in (select danbooru_id from images_old where posted = 1);"
         self.migrate_db_sql4 = "drop table images_old;"
                 
-    def start(self):   
-        fname = "start"
-        self.mime = magic.Magic(mime = True)
-        self.proxy = urllib.request.ProxyHandler({})
-        self.opener = urllib.request.build_opener(self.proxy)
-        self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
-        urllib.request.install_opener(self.opener)
-        self.h = HTMLParser()
-        
-        self.queue = []
-        
-        self.db_file = "{}.db".format(self.config._name)
-        self.reload_configs()
-        
-        if self.booru_type == "danbooru": 
-            self.client = Danbooru(site_url = self.booru_url)
-        elif self.booru_type == "moebooru": 
-            self.client = Moebooru(site_url = self.booru_url)
-        
+    def build_db(self):
+        fname = "build_db"
         conn = sqlite3.connect(self.db_file)
         cur = conn.cursor()
         
@@ -400,6 +385,27 @@ class imagebot(ananas.PineappleBot):
             conn.close()
             self.log(fname, "Database rebuild completed.")
             self.config.rebuild_db = "no"
+                
+    def start(self):   
+        fname = "start"
+        self.mime = magic.Magic(mime = True)
+        self.proxy = urllib.request.ProxyHandler({})
+        self.opener = urllib.request.build_opener(self.proxy)
+        self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
+        urllib.request.install_opener(self.opener)
+        self.h = HTMLParser()
+        
+        self.queue = []
+        
+        self.db_file = "{}.db".format(self.config._name)
+        self.reload_configs()
+        
+        if self.booru_type == "danbooru": 
+            self.client = Danbooru(site_url = self.booru_url)
+        elif self.booru_type == "moebooru": 
+            self.client = Moebooru(site_url = self.booru_url)
+        self.build_db()
+        
         self.log(fname, "Bot started.")
         
     @ananas.schedule(hour = "*/6", minute = 15)
