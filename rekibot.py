@@ -243,6 +243,12 @@ class imagebot(ananas.PineappleBot):
             self.log(fname, "offset = " + str(self.offset))
             self.log(fname, "rebuild_db = " + str(self.rebuild_db))
             self.log(fname, "migrate_flags = " + str(self.migrate_flags))
+        
+        if self.booru_type == "danbooru": 
+            self.client = Danbooru(site_url = self.booru_url)
+        elif self.booru_type == "moebooru": 
+            self.client = Moebooru(site_url = self.booru_url)
+            
         if self.rebuild_db:
             self.build_db()
     
@@ -384,7 +390,11 @@ class imagebot(ananas.PineappleBot):
             conn.commit()
             conn.close()
             self.log(fname, "Database rebuild completed.")
+            self.rebuild_db = False
+            self.migrate_flags = False
             self.config.rebuild_db = "no"
+            self.config.save()
+        
                 
     def start(self):   
         fname = "start"
@@ -394,18 +404,10 @@ class imagebot(ananas.PineappleBot):
         self.opener.addheaders = [('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
         urllib.request.install_opener(self.opener)
         self.h = HTMLParser()
-        
         self.queue = []
-        
         self.db_file = "{}.db".format(self.config._name)
         self.reload_configs()
-        
-        if self.booru_type == "danbooru": 
-            self.client = Danbooru(site_url = self.booru_url)
-        elif self.booru_type == "moebooru": 
-            self.client = Moebooru(site_url = self.booru_url)
         self.build_db()
-        
         self.log(fname, "Bot started.")
         
     @ananas.schedule(hour = "*/6", minute = 15)
