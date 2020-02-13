@@ -565,7 +565,7 @@ class imagebot(ananas.PineappleBot):
                     text = re.sub('<[^<]+?>', '', status_in_question['content'])
                     text = self.h.unescape(text)
                     if self.booru_type == "e621":
-                        id = re.search("posts\/show\/([0-9]+)source", text)
+                        id = re.search("post\/show\/([0-9]+)source", text)
                     else:
                         id = re.search("posts\/([0-9]+)source", text)
                     id = id.groups()[0]
