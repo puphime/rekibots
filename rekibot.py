@@ -1,5 +1,4 @@
 # encoding: utf-8
-import yippi
 import ananas
 import random
 import sqlite3
@@ -244,7 +243,7 @@ class imagebot(ananas.PineappleBot):
             self.log(fname, "rebuild_db = " + str(self.rebuild_db))
             self.log(fname, "migrate_flags = " + str(self.migrate_flags))
         
-        if self.booru_type == "danbooru": 
+        if self.booru_type == "danbooru" or self.booru_type == "e621": 
             self.client = Danbooru(site_url = self.booru_url)
         elif self.booru_type == "moebooru": 
             self.client = Moebooru(site_url = self.booru_url)
@@ -421,27 +420,26 @@ class imagebot(ananas.PineappleBot):
             for page in range(1, self.max_page + 1):
                 while True:
                     try: 
-                        if self.booru_type == "e621":
-                            posts=[]
-                            for x in self.ratings.split(","):
-                                posts = posts + yippi.search().post(tags = [t,], page = str(page), limit = 200, rating = x)
-                        else:
-                            posts = self.client.post_list(tags = t, page = str(page), limit = 200)
+                        posts = self.client.post_list(tags = t, page = str(page), limit = 200)
                     except: continue
                     else: break
                 if len(posts) == 0:
                     if self.verbose_logging: self.log(fname, "No more posts. Break processing.")
                     break
                 counter = 0
-                for post in posts:
-                    if self.booru_type == "e621":
-                        if (post.source is not None and not any(x in post.source.lower() for x in ['drawfag', '.png', '.jpg', '.gif']) and post.source != '') and not self.check_tags(" ".join(post.tags), self.blacklist_tags) and (self.check_tags(" ".join(post.tags), self.mandatory_tags) or len(self.mandatory_tags) == 0) and post.rating in self.ratings.split(","):
-                            source_url = post.source
-                            danbooru_url = post.file_url
-                            try: cur.execute(self.insert_sql, (int(post.id), danbooru_url, source_url, " ".join(post.tags)))
+                if self.booru_type == "e621":
+                    for post in posts['posts']:
+                        tag_string = (' '.join([' '.join(post['tags']['general']),' '.join(post['tags']['species']),' '.join(post['tags']['character']),' '.join(post['tags']['copyright']),' '.join(post['tags']['artist']),' '.join(post['tags']['meta']),' '.join(post['tags']['lore'])]))
+                        while '  ' in tag_string:
+                            tag_string = tag_string.replace('  ',' ')
+                        if (not any(x in post['sources'][0].lower() for x in ['drawfag', '.png', '.jpg', '.gif']) and post['sources'][0] != '') and post['flags']['deleted'] == False and not self.check_tags(tag_string, self.blacklist_tags) and (self.check_tags(tag_string, self.mandatory_tags) or len(self.mandatory_tags) == 0) and post['rating'] in self.ratings.split(","):
+                            source_url = post['sources'][0]
+                            danbooru_url = post['file']['url']
+                            try: cur.execute(self.insert_sql, (int(post['id']), danbooru_url, source_url, tag_string))
                             except: continue
                             else: counter = counter + 1
-                    else:
+                else:
+                    for post in posts:                    
                         if ((not any(x in post['source'].lower() for x in ['drawfag', '.png', '.jpg', '.gif']) and post['source'] != '') or post['pixiv_id'] is not None) and post['is_deleted'] == False and not self.check_tags(post['tag_string'], self.blacklist_tags) and (self.check_tags(post['tag_string'], self.mandatory_tags) or len(self.mandatory_tags) == 0) and post['rating'] in self.ratings.split(","):
                             if post['pixiv_id'] is not None: source_url = 'https://www.pixiv.net/artworks/{}'.format(post['pixiv_id'])
                             else: source_url = post['source']
@@ -469,10 +467,7 @@ class imagebot(ananas.PineappleBot):
         cur.execute(self.flag_blacklisted_sql, (id, ))
         conn.commit()
         conn.close()
-        if self.booru_type == "e621":
-            self.log(fname, "Blacklisted {}/post/show/{} Reason: {}.".format(self.booru_url, id, reason))
-        else:
-            self.log(fname, "Blacklisted {}/posts/{} Reason: {}.".format(self.booru_url, id, reason))
+        self.log(fname, "Blacklisted {}/posts/{} Reason: {}.".format(self.booru_url, id, reason))
 
         
     def check_tags(self, post_tag_string, tag_string, mode = "or"):
@@ -535,18 +530,12 @@ class imagebot(ananas.PineappleBot):
             try:
                 saved_file_path = urllib.request.urlretrieve(url)[0]
                 with open(saved_file_path, 'rb') as file: mediadict = self.mastodon.media_post(file.read(), self.mime.from_file(saved_file_path))
-                if self.booru_type == "e621":
-                    status_text = '{}/post/show/{}\r\nsource: {}'.format(self.booru_url, id, src)
-                else:
-                    status_text = '{}/posts/{}\r\nsource: {}'.format(self.booru_url, id, src)
+                status_text = '{}/posts/{}\r\nsource: {}'.format(self.booru_url, id, src)
                 self.mastodon.status_post(status_text, in_reply_to_id = None, media_ids = (mediadict['id'], ), sensitive = True, visibility = "unlisted", spoiler_text = None)
             except Exception as e:
                 if len(e.args)>1 and e.args[1] == 422: self.blacklist(id, "{}. {}".format(e.args[2], e.args[3]))
                 else: 
-                    if self.booru_type == "e621":
-                        self.log(fname, "Post {}/post/show/{} threw exception: {}".format(self.booru_url, id, e))
-                    else:
-                        self.log(fname, "Post {}/posts/{} threw exception: {}".format(self.booru_url, id, e))
+                    self.log(fname, "Post {}/posts/{} threw exception: {}".format(self.booru_url, id, e))
                 continue
             else:
                 if self.verbose_logging: self.log(fname, "Posted.")
@@ -561,15 +550,13 @@ class imagebot(ananas.PineappleBot):
             if user['acct'] == self.admin:
                 if 'delete this!' in status['content']:
                     status_in_question = self.mastodon.status(status['in_reply_to_id'])
-                    self.mastodon.status_delete(status['in_reply_to_id'])
                     text = re.sub('<[^<]+?>', '', status_in_question['content'])
                     text = self.h.unescape(text)
-                    if self.booru_type == "e621":
-                        id = re.search("post\/show\/([0-9]+)source", text)
-                    else:
-                        id = re.search("posts\/([0-9]+)source", text)
-                    id = id.groups()[0]
-                    self.blacklist(id, "Admin request")
+                    id = re.search("posts\/([0-9]+)source", text)
+                    if id is not None and len(id.groups())>0:
+                        id = id.groups()[0]
+                        self.mastodon.status_delete(status['in_reply_to_id'])
+                        self.blacklist(id, "Admin request")
                 elif 'announce! ' in status['content']:
                     text = re.sub('<[^<]+?>', '', status['content'])
                     text = self.h.unescape(text)
