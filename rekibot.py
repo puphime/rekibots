@@ -432,7 +432,7 @@ class imagebot(ananas.PineappleBot):
                         tag_string = (' '.join([' '.join(post['tags']['general']),' '.join(post['tags']['species']),' '.join(post['tags']['character']),' '.join(post['tags']['copyright']),' '.join(post['tags']['artist']),' '.join(post['tags']['meta']),' '.join(post['tags']['lore'])]))
                         while '  ' in tag_string:
                             tag_string = tag_string.replace('  ',' ')
-                        if (not any(x in post['sources'][0].lower() for x in ['drawfag', '.png', '.jpg', '.gif']) and post['sources'][0] != '') and post['flags']['deleted'] == False and not self.check_tags(tag_string, self.blacklist_tags) and (self.check_tags(tag_string, self.mandatory_tags) or len(self.mandatory_tags) == 0) and post['rating'] in self.ratings.split(","):
+                        if (len(post['sources'])>0 and not any(x in post['sources'][0].lower() for x in ['drawfag', '.png', '.jpg', '.gif'])) and post['flags']['deleted'] == False and not self.check_tags(tag_string, self.blacklist_tags) and (self.check_tags(tag_string, self.mandatory_tags) or len(self.mandatory_tags) == 0) and post['rating'] in self.ratings.split(","):
                             source_url = post['sources'][0]
                             danbooru_url = post['file']['url']
                             try: cur.execute(self.insert_sql, (int(post['id']), danbooru_url, source_url, tag_string))
