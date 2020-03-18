@@ -332,6 +332,9 @@ class imagebot(ananas.PineappleBot):
         self.create_table_sql = "create table if not exists images (danbooru_id integer primary key, url_danbooru text, url_source text, tags text, posted integer default 0, blacklisted integer default 0, UNIQUE(url_danbooru), UNIQUE(url_source));"
         self.insert_sql = "insert into images(danbooru_id, url_danbooru, url_source, tags) values(?, ?, ?, ?);"
         self.select_sql = "select danbooru_id, url_danbooru, url_source, tags from images where blacklisted = 0 and posted = 0 order by random() limit ?;"
+        self.count_unposted_sql = "select count(*) from images where blacklisted = 0 and posted = 0;"
+        self.count_posted_sql = "select count(*) from images where blacklisted = 0 and posted = 1;"
+        self.count_blacklisted_sql = "select count(*) from images where blacklisted = 1"
         self.flag_blacklisted_sql = "update images set blacklisted = 1 where danbooru_id = ?;"
         self.remove_posted_flag_sql = "update images set posted = 0;"
         self.flag_posted_sql = "update images set posted = 1 where danbooru_id = ?;"
@@ -550,17 +553,31 @@ class imagebot(ananas.PineappleBot):
             if user['acct'] == self.admin:
                 if 'delete this!' in status['content']:
                     status_in_question = self.mastodon.status(status['in_reply_to_id'])
+                    try:
+                        self.mastodon.status_delete(status['in_reply_to_id'])
+                    except:
+                        return
                     text = re.sub('<[^<]+?>', '', status_in_question['content'])
                     text = self.h.unescape(text)
                     id = re.search("posts\/([0-9]+)source", text)
                     if id is not None and len(id.groups())>0:
                         id = id.groups()[0]
-                        self.mastodon.status_delete(status['in_reply_to_id'])
                         self.blacklist(id, "Admin request")
                 elif 'announce! ' in status['content']:
                     text = re.sub('<[^<]+?>', '', status['content'])
                     text = self.h.unescape(text)
                     self.mastodon.status_post(text.split('announce! ')[-1], in_reply_to_id = None, media_ids = None, sensitive = False, visibility = "unlisted", spoiler_text = None)
+                elif 'report!' in status['content']:
+                    conn = sqlite3.connect(self.db_file)
+                    cur = conn.cursor()
+                    cur.execute(self.count_posted_sql)
+                    posted = cur.fetchone()[0]
+                    cur.execute(self.count_unposted_sql)
+                    unposted = cur.fetchone()[0]
+                    cur.execute(self.count_blacklisted_sql)
+                    blacklisted = cur.fetchone()[0]
+                    conn.close()
+                    self.mastodon.status_post("@{} DB: {}\r\nunposted: {}\r\nposted: {}\r\nblacklisted: {}".format(self.admin,self.db_file,unposted,posted,blacklisted), in_reply_to_id = status['id'], media_ids = None, sensitive = False, visibility = "unlisted", spoiler_text = None)
         except Exception as e:
             self.log(fname, e)
             return
