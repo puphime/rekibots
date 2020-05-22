@@ -536,10 +536,10 @@ class imagebot(ananas.PineappleBot):
             if self.check_tags(tags, self.cw_tags):
                 spoilertext = list(set(tags.split(" ")).intersection(self.cw_tags.split(",")))
                 andtags = [i for i in self.cw_tags.split(",") if " " in i]
-                    for tag in andtags:
-                        found = [i for i in tags.split(" ") if i in tag.split(" ")]
-                        if len(found) == len(tag.split(" ")):
-                            spoilertext.append(found)
+                for tag in andtags:
+                    found = [i for i in tags.split(" ") if i in tag.split(" ")]
+                    if len(found) == len(tag.split(" ")):
+                        spoilertext.append(found)
                 spoilertext = str(spoilertext)
             saved_file_path = ""
             try:
