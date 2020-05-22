@@ -540,7 +540,7 @@ class imagebot(ananas.PineappleBot):
                     found = [i for i in tags.split(" ") if i in tag.split(" ")]
                     if len(found) == len(tag.split(" ")):
                         spoilertext.append(found)
-                spoilertext = str(spoilertext)
+                spoilertext = "CW: " + ", ".join(spoilertext)
             saved_file_path = ""
             try:
                 saved_file_path = urllib.request.urlretrieve(url)[0]
