@@ -232,6 +232,7 @@ class imagebot(ananas.PineappleBot):
             self.log(fname, "db_file = " + str(self.db_file))
             self.log(fname, "blacklist_tags = " + str(self.blacklist_tags))
             self.log(fname, "mandatory_tags = " + str(self.mandatory_tags))
+            self.log(fname, "cw_tags = " + str(self.cw_tags))
             self.log(fname, "ratings = " + str(self.ratings))
             self.log(fname, "skip_tags = " + str(self.skip_tags))
             self.log(fname, "skip_chance = " + str(self.skip_chance))
@@ -280,6 +281,7 @@ class imagebot(ananas.PineappleBot):
         if 'blacklist_tags' in config and len(config.blacklist_tags) > 0: self.blacklist_tags = (self.blacklist_tags + "," + config.blacklist_tags).strip(",")
         if 'mandatory_tags' in config and len(config.mandatory_tags) > 0: self.mandatory_tags = (self.mandatory_tags + "," + config.mandatory_tags).strip(",")
         if 'skip_tags' in config and len(config.skip_tags) > 0: self.skip_tags = (self.skip_tags + "," + config.skip_tags).strip(",")
+        if 'cw_tags' in config and len(config.cw_tags) > 0: self.cw_tags = (self.cw_tags + "," + config.cw_tags).strip(",")
         if 'ratings' in config and len(config.ratings) > 0: self.ratings = config.ratings
         if 'skip_chance' in config and config.skip_chance.isdigit(): self.skip_chance = int(config.skip_chance)
         if 'max_page' in config and config.max_page.isdigit(): self.max_page = int(config.max_page)
@@ -312,6 +314,7 @@ class imagebot(ananas.PineappleBot):
         
         self.blacklist_tags = ""
         self.mandatory_tags = ""
+        self.cw_tags = ""
         self.skip_tags = ""
         
         self.skip_chance = 75
@@ -529,12 +532,21 @@ class imagebot(ananas.PineappleBot):
                             intersect.append(found)
                     if self.verbose_logging: self.log(fname, "Skipped {}. Reason: Found skip tags {}".format(id, str(intersect)))
                     continue
+            spoilertext = None
+            if self.check_tags(tags, self.cw_tags):
+                spoilertext = list(set(tags.split(" ")).intersection(self.cw_tags.split(",")))
+                andtags = [i for i in self.cw_tags.split(",") if " " in i]
+                    for tag in andtags:
+                        found = [i for i in tags.split(" ") if i in tag.split(" ")]
+                        if len(found) == len(tag.split(" ")):
+                            spoilertext.append(found)
+                spoilertext = str(spoilertext)
             saved_file_path = ""
             try:
                 saved_file_path = urllib.request.urlretrieve(url)[0]
                 with open(saved_file_path, 'rb') as file: mediadict = self.mastodon.media_post(file.read(), self.mime.from_file(saved_file_path))
                 status_text = '{}/posts/{}\r\nsource: {}'.format(self.booru_url, id, src)
-                self.mastodon.status_post(status_text, in_reply_to_id = None, media_ids = (mediadict['id'], ), sensitive = True, visibility = "unlisted", spoiler_text = None)
+                self.mastodon.status_post(status_text, in_reply_to_id = None, media_ids = (mediadict['id'], ), sensitive = True, visibility = "unlisted", spoiler_text = spoilertext)
             except Exception as e:
                 if len(e.args)>1 and e.args[1] == 422: self.blacklist(id, "{}. {}".format(e.args[2], e.args[3]))
                 else: 
