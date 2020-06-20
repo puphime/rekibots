@@ -339,6 +339,7 @@ class imagebot(ananas.PineappleBot):
         self.count_posted_sql = "select count(*) from images where blacklisted = 0 and posted = 1;"
         self.count_blacklisted_sql = "select count(*) from images where blacklisted = 1"
         self.flag_blacklisted_sql = "update images set blacklisted = 1 where danbooru_id = ?;"
+        self.add_tags_sql = "update images set tags = tags || ' ' || ? where danbooru_id = ?;"
         self.remove_posted_flag_sql = "update images set posted = 0;"
         self.flag_posted_sql = "update images set posted = 1 where danbooru_id = ?;"
         self.migrate_db_sql1 = "alter table images rename to images_old;"
@@ -474,6 +475,15 @@ class imagebot(ananas.PineappleBot):
         conn.commit()
         conn.close()
         self.log(fname, "Blacklisted {}/posts/{} Reason: {}.".format(self.booru_url, id, reason))
+    
+    def add_tags(self, id, tags):
+        fname = "add_tags"
+        conn = sqlite3.connect(self.db_file)
+        cur = conn.cursor()
+        cur.execute(self.add_tags_sql, (tags,id))
+        conn.commit()
+        conn.close()
+        self.log(fname, "Added tags to post {}: {}.".format(id, tags))
 
         
     def check_tags(self, post_tag_string, tag_string, mode = "or"):
@@ -575,6 +585,22 @@ class imagebot(ananas.PineappleBot):
                     if id is not None and len(id.groups())>0:
                         id = id.groups()[0]
                         self.blacklist(id, "Admin request")
+                if 'tag this!' in status['content']:
+                    status_in_question = self.mastodon.status(status['in_reply_to_id'])
+                    try:
+                        self.mastodon.status_delete(status['in_reply_to_id'])
+                    except:
+                        return
+                    new_tags = status['content']
+                    new_tags = re.sub('<[^<]+?>', '', new_tags)
+                    new_tags = self.h.unescape(new_tags)
+                    new_tags = new_tags.split("tag this!")[-1].strip()
+                    text = re.sub('<[^<]+?>', '', status_in_question['content'])
+                    text = self.h.unescape(text)
+                    id = re.search("posts\/([0-9]+)source", text)
+                    if id is not None and len(id.groups())>0:
+                        id = id.groups()[0]
+                        self.add_tags(id, new_tags)
                 elif 'announce! ' in status['content']:
                     text = re.sub('<[^<]+?>', '', status['content'])
                     text = self.h.unescape(text)
