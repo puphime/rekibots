@@ -11,7 +11,7 @@ RUN rm -rf ananas
 VOLUME /var/log/script_logs
 VOLUME /usr/src/app
 
-COPY imagebots.cfg .
+COPY rekibot.cfg .
 COPY db ./db/
 COPY rekibot.py .
-CMD ananas imagebots.cfg
+CMD ananas rekibot.cfg
