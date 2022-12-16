@@ -1,0 +1,20 @@
+version: '3'
+services:
+  adminbot:
+    container_name: adminbot
+    hostname: adminbot
+    build: ./
+    image: rekibot
+    volumes:
+      - '${appdir}:/usr/src/app'
+      - '${logdir}:/var/log/script_logs'
+    command: ananas rekibot.cfg
+  imagebot:
+    container_name: imagebot
+    hostname: imagebot
+    build: ./
+    image: rekibot
+    volumes:
+      - '${appdir}:/usr/src/app'
+      - '${logdir}:/var/log/script_logs'
+    command: ananas imagebots.cfg

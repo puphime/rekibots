@@ -12,79 +12,6 @@ from datetime import datetime
 from html.parser import HTMLParser
 import os
 
-class admin_cleaner(ananas.PineappleBot):
-    @ananas.schedule(minute = "*/10")
-    def reload_configs(self):
-        fname = "reload_configs"
-        self.init()
-        self.load_config(globalconf = True)
-        self.load_config()
-        if self.verbose: 
-            self.log(fname, "admin = " + str(self.admin))
-            self.log(fname, "verbose_logging = " + str(self.verbose_logging))
-            self.log(fname, "verbose = " + str(self.verbose))
-            self.log(fname, "log_file = " + str(self.log_file))
-            self.log(fname, "log_to_stderr = " + str(self.log_to_stderr))
-
-    def load_config(self, globalconf = False):
-        if globalconf:
-            config = ananas.PineappleBot.Config(self.config._bot, self.config._filename)
-            config.load("global", silent = not self.verbose_logging)
-        else: 
-            config = self.config
-            config.load(self.config._name, silent = not self.verbose_logging)
-        
-        if "admin" in config and len(config.admin) > 0: self.admin = config.admin
-        if "verbose" in config and (config.verbose.lower() in ['no', 'yes', 'very']):
-            if config.verbose.lower() == "yes": 
-                self.verbose_logging = True
-                self.verbose = False
-            elif config.verbose.lower() == "very": 
-                self.verbose_logging = True
-                self.verbose = True
-            elif config.verbose.lower() == "no":
-                self.verbose_logging = False
-                self.verbose = False
-        if "log_file" in config and len(config.log_file) > 0:
-            self.log_file = open(config.log_file, "a")
-            self.log_to_stderr = False
-                
-    def log(self, id, msg):
-        if id is None:
-            id = self.__class__.__name__
-        print("[{0:%Y-%m-%d %H:%M:%S}] {1}.{2}: {3}".format(datetime.now(), self.config._name, id, str(msg)), file = self.log_file, flush = True)
-        
-    def init(self):
-        self.admin = "pup_hime@slime.global"
-        self.verbose_logging = False #the bot's verbosity
-        self.verbose = False #ananas' own verbosity  
-        self.log_file = sys.stderr
-        self.log_to_stderr = True
-     
-    def start(self):
-        fname = "start"
-        self.reload_configs()
-        self.me = self.mastodon.account_verify_credentials()
-        self.last_checked_post = self.mastodon.timeline_home()[0]
-        self.log(fname, "Bot started.")
-
-    @ananas.schedule(minute = 0)
-    def check_posts(self):
-        fname = "check_posts"
-        try:
-            posts = self.mastodon.account_statuses(self.me['id'], since_id = self.last_checked_post)
-            if len(posts) > 0:
-                for post in posts:
-                    if "delete this!" in post['content']:
-                        self.mastodon.status_delete(post['id'])
-                        if self.verbose_logging: self.log(fname, "Found deleter post id {}.".format(post['id']))
-                    if "announce! " in post['content']:
-                        self.mastodon.status_delete(post['id'])
-                        if self.verbose_logging: self.log(fname, "Found announcer post id {}.".format(post['id']))
-                self.last_checked_post = posts[0]
-        except Exception as e:
-            self.log(fname, e)
-            return
 
 class reminder(ananas.PineappleBot):
     @ananas.schedule(minute = "*/10")
@@ -143,7 +70,7 @@ class reminder(ananas.PineappleBot):
         self.h = HTMLParser()
         self.log(fname, "Bot started.")
         
-    @ananas.schedule(minute = "*", second = 30)
+    @ananas.schedule(minute = "*/30")
     def check_follows(self):
         fname = "check_follows"
         try:
@@ -161,7 +88,7 @@ class reminder(ananas.PineappleBot):
             for follower in followers: followerids = followerids + [follower['id'], ]
             for follower in followerids:
                 if follower not in followingids:
-                    time.sleep(1)
+                    time.sleep(2)
                     if not self.mastodon.account_relationships(follower)[0]['requested']:
                         if "moved" in self.mastodon.account(follower):
                             self.mastodon.account_block(follower)
@@ -172,7 +99,7 @@ class reminder(ananas.PineappleBot):
                             if self.verbose_logging: self.log(fname, "Attempted to follow user {}.".format(str(follower)))
             for followed in followingids:
                 if followed not in followerids:
-                    time.sleep(1)
+                    time.sleep(2)
                     if not self.mastodon.account_relationships(followed)[0]['requested']:
                         self.mastodon.account_unfollow(followed) 
                         if self.verbose_logging: self.log(fname, "Unfollowed user {}.".format(str(followed)))
@@ -187,10 +114,10 @@ class reminder(ananas.PineappleBot):
             posts = self.mastodon.timeline_home(since_id = self.last_checked_post['id'])
             if len(posts) > 0:
                 for post in posts:
-                    if len(post['media_attachments']) > 0 and post['reblog'] is None and post['in_reply_to_id'] is None and post['account']['acct'] != self.admin:
+                    if len(post['media_attachments']) > 0 and post['reblog'] is None and post['in_reply_to_id'] is None:
                         flag = False
                         for attachment in post['media_attachments']: 
-                            if attachment['description'] is None: flag = True
+                            if attachment['description'] is None and attachment['type'] == 'image': flag = True
                         if flag:
                             self.mastodon.status_post('@' + post['account']['acct'] + ' hey, just so you know, this status includes an attachment with missing accessibility (alt) text.', in_reply_to_id = (post['id']), visibility = 'direct')
                             if self.verbose_logging: self.log(fname, "Posted reply.")
@@ -205,7 +132,7 @@ class reminder(ananas.PineappleBot):
         try:
             if user['acct'] == self.admin:
                 if 'delete this!' in status['content']: self.mastodon.status_delete(status['in_reply_to_id'])
-                elif '!announce' in status['content']:
+                elif 'announce! ' in status['content']:
                     text = re.sub('<[^<]+?>', '', status['content'])
                     text = self.h.unescape(text)
                     self.mastodon.status_post(text.split('announce! ')[-1], in_reply_to_id = None, media_ids = None, sensitive = False, visibility = "unlisted", spoiler_text = None)
@@ -414,6 +341,7 @@ class imagebot(ananas.PineappleBot):
         self.db_file = "{}.db".format(self.config._name)
         self.reload_configs()
         self.build_db()
+        self.mastodon.account_update_credentials(note=f"Pic every 30 min. Report bad stuff to @{self.admin}")
         self.log(fname, "Bot started.")
         
     @ananas.schedule(hour = "*/6", minute = 15)

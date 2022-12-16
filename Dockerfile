@@ -1,4 +1,4 @@
-FROM python:3-alpine
+FROM python:3.11.1-alpine
 
 WORKDIR /var/log/script_logs
 WORKDIR /usr/src/app
@@ -8,9 +8,9 @@ RUN pip install --no-cache-dir Pybooru
 RUN git clone https://github.com/chr-1x/ananas.git
 RUN pip install --no-cache-dir ./ananas
 RUN rm -rf ananas
+
 VOLUME /var/log/script_logs
 VOLUME /usr/src/app
-
 COPY rekibot.cfg .
 COPY db ./db/
 COPY rekibot.py .
