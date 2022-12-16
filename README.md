@@ -11,9 +11,6 @@ Builds a local database and posts images from any Danbooru compatible image boar
 ### Alt text reminder bot
 Reminds followers gently that they forgot to add alt text to their media.
 
-### Admin cleaner bot
-Automatically deletes admin commands from the admin account every full hour. (requires log in as admin account)
-
 ## Setup
 Clone, make sure rekibot.py is on your PYTHONPATH, setup a configuration file according to the instructions for Ananas and below and launch with ananas config.cfg -i. Proceed with the instructions. Next time run without the -i.
 
