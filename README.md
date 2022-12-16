@@ -50,7 +50,7 @@ Apart from the default entires as covered in the readme for ananas, there are al
 
 `rebuild_db`: (default = no) (available values = `yes, no, no_migration`) trigger database rebuild. `no_migration` causes the blacklisted and posted flags to be discarded. After rebuild is done, automatically set to `no`.
 
-`post_every`: (default = 30) how many minutes between each post from the bot (keep in mind they must fit within an hour, so any more than 30 will only post twice at most).
+`post_every`: (default = 30) how many minutes between each post from the bot (keep in mind they must fit within an hour, so any more than 30 will only post once at most).
 
 `offset`: (default = 0) offset posting time by this many minutes (eg. with a value of 2, instead of posting at 0 and 30 minutes past, post at 2 and 32 minutes past).
 
