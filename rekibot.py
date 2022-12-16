@@ -70,7 +70,7 @@ class reminder(ananas.PineappleBot):
         self.h = HTMLParser()
         self.log(fname, "Bot started.")
         
-    @ananas.schedule(minute = "*/30")
+    @ananas.schedule(minute = "*/10")
     def check_follows(self):
         fname = "check_follows"
         try:
@@ -95,8 +95,18 @@ class reminder(ananas.PineappleBot):
                             self.mastodon.account_unblock(follower)
                             if self.verbose_logging: self.log(fname, "Softblocked user {}.".format(str(follower)))
                         else:
-                            ret = self.mastodon.account_follow(follower, reblogs = False)
-                            if self.verbose_logging: self.log(fname, "Attempted to follow user {}.".format(str(follower)))
+                            try:
+                                self.mastodon.account_follow(follower, reblogs = False)
+                                if self.verbose_logging: self.log(fname, "Attempted to follow user {}.".format(str(follower)))
+                            except Exception as e:
+                                if e.args[1] == 403:
+                                    if self.verbose_logging: self.log(fname, "Attempted to follow user {} but got 403.".format(str(follower)))
+                                    self.mastodon.account_block(follower)
+                                    self.mastodon.account_unblock(follower)
+                                    if self.verbose_logging: self.log(fname, "Softblocked user {}.".format(str(follower)))
+                                else:
+                                    self.log(fname, e)
+                                    return
             for followed in followingids:
                 if followed not in followerids:
                     time.sleep(2)
