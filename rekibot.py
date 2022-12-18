@@ -11,6 +11,7 @@ import sys
 from datetime import datetime
 from html.parser import HTMLParser
 import os
+import mastodon
 
 
 class reminder(ananas.PineappleBot):
@@ -65,59 +66,71 @@ class reminder(ananas.PineappleBot):
     def start(self):
         fname = "start"
         self.reload_configs()
+        self.mastodon = mastodon.Mastodon(client_id=self.config.client_id,client_secret=self.config.client_secret,access_token=self.config.access_token,api_base_url=f"https://{self.config.domain}",ratelimit_method='throw')
         self.me = self.mastodon.account_verify_credentials()
         self.last_checked_post = self.mastodon.timeline_home()[0]
         self.h = HTMLParser()
         self.log(fname, "Bot started.")
         
-    @ananas.schedule(minute = "*/10")
+    @ananas.schedule(minute = "*")
     def check_follows(self):
         fname = "check_follows"
         try:
+            self.log(fname,"starting follow check")
             self.me = self.mastodon.account_verify_credentials()
             my_id = self.me['id']
             followers_count = self.me['followers_count']
             followers = self.mastodon.account_followers(my_id, limit = 80)
-            if len(followers) < followers_count: followers = self.mastodon.fetch_remaining(followers)
+            while len(followers) < followers_count: followers = followers + self.mastodon.fetch_remaining(followers)
             following_count = self.me['following_count']
             following = self.mastodon.account_following(my_id, limit = 80)
-            if len(following) < following_count: following = self.mastodon.fetch_remaining(following)
+            while len(following) < following_count: following = following + self.mastodon.fetch_remaining(following)
             followingids = []
             for followed in following: followingids = followingids + [followed['id'], ]
             followerids = []
             for follower in followers: followerids = followerids + [follower['id'], ]
+            processed = 1
             for follower in followerids:
                 if follower not in followingids:
-                    time.sleep(2)
                     if not self.mastodon.account_relationships(follower)[0]['requested']:
                         if "moved" in self.mastodon.account(follower):
                             self.mastodon.account_block(follower)
                             self.mastodon.account_unblock(follower)
                             if self.verbose_logging: self.log(fname, "Softblocked user {}.".format(str(follower)))
+                            time.sleep(5)
                         else:
                             try:
                                 self.mastodon.account_follow(follower, reblogs = False)
                                 if self.verbose_logging: self.log(fname, "Attempted to follow user {}.".format(str(follower)))
+                                time.sleep(5)
                             except Exception as e:
-                                if e.args[1] == 403:
+                                if len(e.args)>2 and e.args[1] == 403:
                                     if self.verbose_logging: self.log(fname, "Attempted to follow user {} but got 403.".format(str(follower)))
                                     self.mastodon.account_block(follower)
                                     self.mastodon.account_unblock(follower)
                                     if self.verbose_logging: self.log(fname, "Softblocked user {}.".format(str(follower)))
+                                    time.sleep(5)
                                 else:
-                                    self.log(fname, e)
-                                    return
+                                    raise e
+                    processed = processed + 1
+                if not processed%40:
+                    break
+            processed = 1
             for followed in followingids:
                 if followed not in followerids:
-                    time.sleep(2)
                     if not self.mastodon.account_relationships(followed)[0]['requested']:
                         self.mastodon.account_unfollow(followed) 
                         if self.verbose_logging: self.log(fname, "Unfollowed user {}.".format(str(followed)))
+                        time.sleep(5)
+                        processed = processed + 1
+                if not processed%40:
+                    break
+
         except Exception as e:
             self.log(fname, e)
             return
    
-    @ananas.schedule(minute = "*", second = 0)
+    @ananas.schedule(minute = "*/2")
     def check_posts(self):
         fname = "check_posts"
         try:
@@ -131,6 +144,7 @@ class reminder(ananas.PineappleBot):
                         if flag:
                             self.mastodon.status_post('@' + post['account']['acct'] + ' hey, just so you know, this status includes an attachment with missing accessibility (alt) text.', in_reply_to_id = (post['id']), visibility = 'direct')
                             if self.verbose_logging: self.log(fname, "Posted reply.")
+                            time.sleep(5)
                 self.last_checked_post = posts[0]
         except Exception as e:
             self.log(fname, e)
@@ -351,7 +365,10 @@ class imagebot(ananas.PineappleBot):
         self.db_file = "{}.db".format(self.config._name)
         self.reload_configs()
         self.build_db()
-        self.mastodon.account_update_credentials(note=f"Pic every 30 min. Report bad stuff to @{self.admin}")
+        try:
+            self.mastodon.account_update_credentials(note=f"Pic every 30 min. Report bad stuff to @{self.admin}")
+        except Exception as e:
+            self.log(fname, e)
         self.log(fname, "Bot started.")
         
     @ananas.schedule(hour = "*/6", minute = 15)
@@ -492,7 +509,7 @@ class imagebot(ananas.PineappleBot):
             saved_file_path = ""
             try:
                 saved_file_path = urllib.request.urlretrieve(url)[0]
-                with open(saved_file_path, 'rb') as file: mediadict = self.mastodon.media_post(file.read(), self.mime.from_file(saved_file_path))
+                with open(saved_file_path, 'rb') as file: mediadict = self.mastodon.media_post(file.read(), mime_type = self.mime.from_file(saved_file_path), description = f"Image with the tags: {tags.replace(' ',', ').replace('_',' ')[:1400]}")
                 status_text = '{}/posts/{}\r\nsource: {}'.format(self.booru_url, id, src)
                 self.mastodon.status_post(status_text, in_reply_to_id = None, media_ids = (mediadict['id'], ), sensitive = True, visibility = "unlisted", spoiler_text = spoilertext)
             except Exception as e:
