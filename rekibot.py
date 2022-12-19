@@ -58,8 +58,6 @@ class AltTextReminder(ananas.PineappleBot):
               file=self.log_file, flush=True)
     
     def init(self):
-        self.me = None
-        self.last_checked_post = None
         self.admin = 'pup_hime@slime.global'
         self.verbose_logging = False  # the bot's verbosity
         self.verbose = False  # ananas' own verbosity
@@ -273,8 +271,6 @@ class ImageBot(ananas.PineappleBot):
               file=self.log_file, flush=True)
 
     def init(self):
-        self.client = None
-        self.queue = []
         self.proxy = urllib.request.ProxyHandler({})
         self.opener = urllib.request.build_opener(self.proxy)
         self.mime = magic.Magic(mime=True)
@@ -386,6 +382,7 @@ class ImageBot(ananas.PineappleBot):
                                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30')]
         urllib.request.install_opener(self.opener)
         self.db_file = f'{self.config._name}.db'
+        self.queue = []
         self.reload_configs()
         self.build_db()
         try:
