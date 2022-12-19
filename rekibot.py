@@ -78,7 +78,7 @@ class AltTextReminder(ananas.PineappleBot):
         self.last_checked_post = self.mastodon.timeline_home()[0]
         self.log(function_name, 'Bot started.')
 
-    @ananas.schedule(minute='*')
+    @ananas.schedule(minute='*/10')
     def check_follows(self):
         function_name = 'check_follows'
         try:
