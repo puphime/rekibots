@@ -18,7 +18,7 @@ For an example config see https://github.com/puphime/rekibots/blob/master/debug.
 
 ## Config entries
 
-`class`: `rekibot.imagebot` for image bot, `rekibot.reminder` for alt text reminder bot, or `rekibot.admin_cleaner` for admin cleaner bot
+`class`: `rekibot.ImageBot` for image bot, `rekibot.AltTextReminder` for alt text reminder bot
 
 Apart from the default entires as covered in the readme for ananas, there are also custom entries:
 
@@ -59,12 +59,6 @@ Apart from the default entires as covered in the readme for ananas, there are al
 `verbose`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
 
 ### Reminder bot
-
-`log_file`: file to save logs in. If not present, will print to stderr.
-
-`verbose`: (default = no) (available values = `yes, no, very`) increase the amount of information produced by rekibots.
-
-### Admin cleaner bot
 
 `log_file`: file to save logs in. If not present, will print to stderr.
 
