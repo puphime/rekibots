@@ -54,7 +54,7 @@ class AltTextReminder(ananas.PineappleBot):
     def log(self, bot_id, msg):
         if bot_id is None:
             bot_id = self.__class__.__name__
-        print(f'[{datetime.now():%Y-%m-%d %H:%M:%S}] {self.config._name}.{id}: {str(msg)}',
+        print(f'[{datetime.now():%Y-%m-%d %H:%M:%S}] {self.config._name}.{bot_id}: {str(msg)}',
               file=self.log_file, flush=True)
     
     def init(self):

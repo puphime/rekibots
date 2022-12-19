@@ -5,6 +5,7 @@
 *.db
 *.kate-swp
 .kateproject
+.idea
 .directory
 db/*
 script_logs/*
