@@ -134,6 +134,12 @@ class AltTextReminder(ananas.PineappleBot):
             self.log(function_name, e)
             return
 
+    @staticmethod
+    def is_good_description(description):
+        return description not in (
+            None, "image/jpeg", "image/png", "image/gif", "Image from Gboard clipboard"
+        )
+
     @ananas.schedule(minute="*/2")
     def check_posts(self):
         function_name = "check_posts"
@@ -144,7 +150,7 @@ class AltTextReminder(ananas.PineappleBot):
                     if len(post['media_attachments']) > 0 and post['reblog'] is None and post['in_reply_to_id'] is None:
                         flag = False
                         for attachment in post['media_attachments']:
-                            if attachment['description'] is None and attachment['type'] == 'image': flag = True
+                            if not self.is_good_description(attachment['description']) and attachment['type'] == 'image': flag = True
                         if flag:
                             self.mastodon.status_post(
                                 f'@{post["account"]["acct"]} hey, just so you know, this status includes an attachment with missing accessibility (alt) text.',
